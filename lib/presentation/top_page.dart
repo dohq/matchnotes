@@ -145,24 +145,10 @@ class _ChartWithLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    // X軸の最小値・目盛間隔を月の日数に合わせて調整し、月末(30/31)ラベルを表示する
-    // 31日の場合: min=1, interval=5 → 1,6,11,16,21,26,31
-    // 30日など:  min=0, intervalを(10→5→2→1)から分割可能なものを選択 → 0,5,10,15,20,25,30 など
-    double xMin;
-    double xInterval;
-    if (daysInMonth % 5 == 1) {
-      xMin = 1;
-      xInterval = 5;
-    } else {
-      xMin = 0;
-      final candidates = [10, 5, 2, 1];
-      xInterval = candidates
-          .firstWhere(
-            (s) => daysInMonth % s == 0 && daysInMonth / s <= 7,
-            orElse: () => 5,
-          )
-          .toDouble();
-    }
+    // X軸は常に1日から開始し、月の日数に応じて見やすい間隔に調整
+    // 表示は常に1〜最終日。メモリは1刻みだが、表示するラベルは約6個になるよう間引く。
+    // これにより「1」と「最終日(30/31)」の両方を必ず表示できる。
+    final double xMin = 1;
     final palette = _buildPalette(context, series.length);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,20 +169,29 @@ class _ChartWithLegend extends StatelessWidget {
             primaryXAxis: NumericAxis(
               minimum: xMin,
               maximum: daysInMonth.toDouble(),
-              interval: xInterval,
+              interval: 1,
               edgeLabelPlacement: EdgeLabelPlacement.shift,
               majorGridLines: const MajorGridLines(width: 0),
               labelStyle: Theme.of(context).textTheme.bodySmall,
               axisLabelFormatter: (args) {
                 final v = args.value.toInt();
-                if (v == 0) {
+                final last = daysInMonth;
+                if (v == 1 || v == last) {
                   return ChartAxisLabel(
-                    '',
+                    v.toString(),
+                    Theme.of(context).textTheme.bodySmall!,
+                  );
+                }
+                // 1〜最終日の範囲をおおよそ6分割してその分割点のみ表示
+                final step = ((last - 1) / 6).ceil();
+                if ((v - 1) % step == 0) {
+                  return ChartAxisLabel(
+                    v.toString(),
                     Theme.of(context).textTheme.bodySmall!,
                   );
                 }
                 return ChartAxisLabel(
-                  v.toString(),
+                  '',
                   Theme.of(context).textTheme.bodySmall!,
                 );
               },
