@@ -25,24 +25,24 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          // Create all tables for version 1
-          await m.createAll();
-          // v2: If you add new indexes/columns later, also apply them here so
-          // fresh installs at schemaVersion=2 have the same schema as upgraded ones.
-        },
-        onUpgrade: (m, from, to) async {
-          // v2 placeholder: No structural changes yet.
-          // Example for future changes:
-          // if (from < 2) {
-          //   await m.addColumn(dailyCharacterRecords, dailyCharacterRecords.memo);
-          //   await m.createIndex(Index('idx_daily_game_day', [...]));
-          // }
-        },
-        beforeOpen: (details) async {
-          // Place for PRAGMA or seeding if needed
-        },
-      );
+    onCreate: (m) async {
+      // Create all tables for version 1
+      await m.createAll();
+      // v2: If you add new indexes/columns later, also apply them here so
+      // fresh installs at schemaVersion=2 have the same schema as upgraded ones.
+    },
+    onUpgrade: (m, from, to) async {
+      // v2 placeholder: No structural changes yet.
+      // Example for future changes:
+      // if (from < 2) {
+      //   await m.addColumn(dailyCharacterRecords, dailyCharacterRecords.memo);
+      //   await m.createIndex(Index('idx_daily_game_day', [...]));
+      // }
+    },
+    beforeOpen: (details) async {
+      // Place for PRAGMA or seeding if needed
+    },
+  );
 
   // Helpers to convert DateTime <-> yyyymmdd
   static int toYyyymmdd(DateTime date) =>
