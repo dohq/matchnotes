@@ -32,9 +32,7 @@ class ImportDailyRecordsCsvUsecase {
     }
 
     // cache known gameIds
-    final known = <String>{
-      for (final g in await db.fetchAllGames()) g.id,
-    };
+    final known = <String>{for (final g in await db.fetchAllGames()) g.id};
 
     var count = 0;
     for (var i = 1; i < rows.length; i++) {
@@ -53,10 +51,9 @@ class ImportDailyRecordsCsvUsecase {
 
       // ensure game exists in master
       if (!known.contains(gameId)) {
-        await db.upsertGame(GamesCompanion(
-          id: Value(gameId),
-          name: Value(gameId),
-        ));
+        await db.upsertGame(
+          GamesCompanion(id: Value(gameId), name: Value(gameId)),
+        );
         known.add(gameId);
       }
 

@@ -63,6 +63,12 @@ final getMonthlyWinRatesPerGameUsecaseProvider =
       return GetMonthlyWinRatesPerGameUsecase(repo, db);
     });
 
+// Games stream provider for management UI
+final watchAllGamesProvider = StreamProvider<List<GameRow>>((ref) async* {
+  final db = await ref.watch(appDatabaseProvider.future);
+  yield* db.watchAllGames();
+});
+
 final exportDailyRecordsCsvUsecaseProvider =
     FutureProvider<ExportDailyRecordsCsvUsecase>((ref) async {
       final repo = await ref.watch(
