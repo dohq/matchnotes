@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
+import 'package:matchnotes/presentation/x_axis_labels.dart';
 import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 import 'game_select_page.dart';
 import 'settings_page.dart';
@@ -170,28 +171,16 @@ class _ChartWithLegend extends StatelessWidget {
               minimum: xMin,
               maximum: daysInMonth.toDouble(),
               interval: 1,
-              edgeLabelPlacement: EdgeLabelPlacement.shift,
+              edgeLabelPlacement: EdgeLabelPlacement.none,
+              rangePadding: ChartRangePadding.none,
+              labelIntersectAction: AxisLabelIntersectAction.none,
               majorGridLines: const MajorGridLines(width: 0),
               labelStyle: Theme.of(context).textTheme.bodySmall,
               axisLabelFormatter: (args) {
                 final v = args.value.toInt();
-                final last = daysInMonth;
-                if (v == 1 || v == last) {
-                  return ChartAxisLabel(
-                    v.toString(),
-                    Theme.of(context).textTheme.bodySmall!,
-                  );
-                }
-                // 1〜最終日の範囲をおおよそ6分割してその分割点のみ表示
-                final step = ((last - 1) / 6).ceil();
-                if ((v - 1) % step == 0) {
-                  return ChartAxisLabel(
-                    v.toString(),
-                    Theme.of(context).textTheme.bodySmall!,
-                  );
-                }
+                final show = shouldShowXAxisLabel(v, daysInMonth);
                 return ChartAxisLabel(
-                  '',
+                  show ? v.toString() : '',
                   Theme.of(context).textTheme.bodySmall!,
                 );
               },
