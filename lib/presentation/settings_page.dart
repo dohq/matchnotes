@@ -70,9 +70,37 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   data: (usecase) async {
                     try {
                       final file = File(path);
-                      final count = await usecase.execute(file: file);
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('インポート完了: $count 件')),
+                      final report = await usecase.executeWithReport(file: file);
+                      // 上位5件のみ表示、残りは件数で示す
+                      final maxShow = 5;
+                      final shownErrors = report.errors.take(maxShow).toList();
+                      final remaining = report.errors.length - shownErrors.length;
+                      // 表示用本文
+                      final sb = StringBuffer()
+                        ..writeln('インポート: ${report.imported} 件')
+                        ..writeln('スキップ: ${report.skipped} 件');
+                      if (report.errors.isNotEmpty) {
+                        sb.writeln('\nエラー詳細（一部）:');
+                        for (final e in shownErrors) {
+                          sb.writeln('- $e');
+                        }
+                        if (remaining > 0) {
+                          sb.writeln('… ほか $remaining 件');
+                        }
+                      }
+                      if (!context.mounted) return;
+                      await showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('インポート結果'),
+                          content: SingleChildScrollView(child: Text(sb.toString())),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('閉じる'),
+                            ),
+                          ],
+                        ),
                       );
                     } catch (e) {
                       messenger.showSnackBar(
