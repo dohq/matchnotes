@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/domain/entities.dart' as domain;
+import 'package:matchnotes/presentation/daily_page.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -14,11 +15,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Matchnotes',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const DemoPage(),
+      home: const DailyPage(),
     );
   }
 }

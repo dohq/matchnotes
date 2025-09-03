@@ -23,6 +23,21 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      // Create all tables for version 1
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      // No-op for now since current schemaVersion is 1
+      // Add incremental migrations here when bumping schemaVersion > 1
+    },
+    beforeOpen: (details) async {
+      // Place for PRAGMA or seeding if needed
+    },
+  );
+
   // Helpers to convert DateTime <-> yyyymmdd
   static int toYyyymmdd(DateTime date) =>
       date.year * 10000 + date.month * 100 + date.day;
