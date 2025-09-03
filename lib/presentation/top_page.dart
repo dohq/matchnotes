@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 import 'game_select_page.dart';
@@ -12,6 +12,12 @@ class TopPage extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<TopPage> createState() => _TopPageState();
+}
+
+class _Point {
+  final int x;
+  final double y;
+  const _Point(this.x, this.y);
 }
 
 class _TopPageState extends ConsumerState<TopPage> {
@@ -153,86 +159,52 @@ class _ChartWithLegend extends StatelessWidget {
             color: Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: LineChart(
-            LineChartData(
-              minX: 1,
-              maxX: daysInMonth.toDouble(),
-              minY: 0,
-              maxY: 100,
-              gridData: FlGridData(show: true, drawVerticalLine: false),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    interval: 25,
-                    getTitlesWidget: (value, meta) => Text(
-                      '${value.toInt()}%',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: (daysInMonth / 6).ceilToDouble(),
-                    getTitlesWidget: (value, meta) => Text(
-                      value.toInt().toString(),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              lineBarsData: [
-                for (var i = 0; i < series.length; i++)
-                  LineChartBarData(
-                    isCurved: false,
-                    color: palette[i],
-                    barWidth: 2,
-                    dotData: FlDotData(show: true),
-                    spots: series[i].points
-                        .map(
-                          (p) => FlSpot(p.day.day.toDouble(), p.winRate * 100),
-                        )
-                        .toList(growable: false),
-                  ),
-              ],
-              borderData: FlBorderData(show: true),
+          child: SfCartesianChart(
+            plotAreaBorderWidth: 0,
+            legend: const Legend(
+              isVisible: true,
+              overflowMode: LegendItemOverflowMode.wrap,
             ),
+            primaryXAxis: NumericAxis(
+              minimum: 1,
+              maximum: daysInMonth.toDouble(),
+              interval: (daysInMonth / 6).ceilToDouble(),
+              edgeLabelPlacement: EdgeLabelPlacement.shift,
+              majorGridLines: const MajorGridLines(width: 0),
+              labelStyle: Theme.of(context).textTheme.bodySmall,
+            ),
+            primaryYAxis: NumericAxis(
+              minimum: 0,
+              maximum: 100,
+              interval: 25,
+              axisLabelFormatter: (args) => ChartAxisLabel(
+                '${args.value.toInt()}%',
+                Theme.of(context).textTheme.bodySmall!,
+              ),
+            ),
+            series: [
+              for (var i = 0; i < series.length; i++)
+                LineSeries<_Point, num>(
+                  dataSource: [
+                    for (final p in series[i].points)
+                      _Point(p.day.day, (p.winRate * 100)),
+                  ],
+                  xValueMapper: (pt, _) => pt.x,
+                  yValueMapper: (pt, _) => pt.y,
+                  color: palette[i],
+                  width: 2,
+                  markerSettings: const MarkerSettings(
+                    isVisible: true,
+                    width: 4,
+                    height: 4,
+                  ),
+                  name: series[i].gameName,
+                ),
+            ],
+            tooltipBehavior: TooltipBehavior(enable: true),
           ),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            for (var i = 0; i < series.length; i++)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: palette[i],
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    series[i].gameName,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-          ],
-        ),
       ],
     );
   }
