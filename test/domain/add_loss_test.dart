@@ -15,6 +15,24 @@ class InMemoryDailyCharacterRecordRepo
   Future<void> upsert(DailyCharacterRecord record) async {
     _store[record.id] = record;
   }
+
+  @override
+  Future<List<DailyCharacterRecord>> findByGameAndDay({
+    required String gameId,
+    required DateTime day,
+  }) async {
+    final d = DateTime(day.year, day.month, day.day);
+    return _store.entries
+        .where(
+          (e) =>
+              e.key.gameId == gameId &&
+              e.key.date.year == d.year &&
+              e.key.date.month == d.month &&
+              e.key.date.day == d.day,
+        )
+        .map((e) => e.value)
+        .toList(growable: false);
+  }
 }
 
 void main() {
