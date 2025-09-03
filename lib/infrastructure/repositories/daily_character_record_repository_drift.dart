@@ -65,4 +65,13 @@ class DailyCharacterRecordRepositoryDrift
     final rows = await db.fetchByGameAndDay(gameId: gameId, day: day);
     return rows.map(_mapRow).toList(growable: false);
   }
+
+  @override
+  Future<List<domain.DailyCharacterRecord>> findByRange({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final rows = await db.fetchByRange(start: start, end: end);
+    return rows.map(_mapRow).toList(growable: false);
+  }
 }

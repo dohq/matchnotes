@@ -104,4 +104,16 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertGame(Insertable<GameRow> row) async {
     await into(games).insertOnConflictUpdate(row);
   }
+
+  // Range query for monthly aggregations
+  Future<List<DailyCharacterRecordRow>> fetchByRange({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final s = toYyyymmdd(start);
+    final e = toYyyymmdd(end);
+    final q = select(dailyCharacterRecords)
+      ..where((t) => t.yyyymmdd.isBetweenValues(s, e));
+    return q.get();
+  }
 }

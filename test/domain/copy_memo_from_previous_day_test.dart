@@ -33,6 +33,24 @@ class InMemoryDailyCharacterRecordRepo
         .map((e) => e.value)
         .toList(growable: false);
   }
+
+  @override
+  Future<List<DailyCharacterRecord>> findByRange({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final s = DateTime(start.year, start.month, start.day);
+    final e = DateTime(end.year, end.month, end.day);
+    return _store.entries
+        .where((entry) {
+          final d = entry.key.date;
+          final dd = DateTime(d.year, d.month, d.day);
+          return (dd.isAfter(s) || dd.isAtSameMomentAs(s)) &&
+              (dd.isBefore(e) || dd.isAtSameMomentAs(e));
+        })
+        .map((e) => e.value)
+        .toList(growable: false);
+  }
 }
 
 void main() {

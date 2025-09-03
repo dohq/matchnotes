@@ -7,6 +7,7 @@ import 'package:matchnotes/domain/usecases/add_win.dart';
 import 'package:matchnotes/domain/usecases/add_loss.dart';
 import 'package:matchnotes/domain/usecases/get_daily_game_summary.dart';
 import 'package:matchnotes/domain/usecases/copy_memo_from_previous_day.dart';
+import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 
 // Async DB provider
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
@@ -49,4 +50,13 @@ final copyMemoFromPreviousDayUsecaseProvider =
         dailyCharacterRecordRepositoryProvider.future,
       );
       return CopyMemoFromPreviousDayUsecase(repo);
+    });
+
+final getMonthlyWinRatesPerGameUsecaseProvider =
+    FutureProvider<GetMonthlyWinRatesPerGameUsecase>((ref) async {
+      final repo = await ref.watch(
+        dailyCharacterRecordRepositoryProvider.future,
+      );
+      final db = await ref.watch(appDatabaseProvider.future);
+      return GetMonthlyWinRatesPerGameUsecase(repo, db);
     });

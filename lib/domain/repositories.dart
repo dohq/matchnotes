@@ -7,4 +7,8 @@ abstract class DailyCharacterRecordRepository {
     required String gameId,
     required DateTime day,
   });
+  Future<List<DailyCharacterRecord>> findByRange({
+    required DateTime start,
+    required DateTime end,
+  });
 }
