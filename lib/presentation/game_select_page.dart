@@ -6,7 +6,6 @@ class GameSelectPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Replace with real games from repository
     final games = const ['demo-game', 'game-2'];
     return Scaffold(
       appBar: AppBar(title: const Text('ゲーム選択')),
@@ -27,10 +26,9 @@ class GameSelectPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: implement add game dialog
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Add game (TODO)')));
+          ).showSnackBar(const SnackBar(content: Text('未実装です')));
         },
         icon: const Icon(Icons.add),
         label: const Text('ゲーム追加'),

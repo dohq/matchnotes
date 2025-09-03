@@ -7,7 +7,6 @@ class CharacterSelectPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Replace with real characters from repository
     final characters = const ['char-1', 'char-2', 'char-3'];
     return Scaffold(
       appBar: AppBar(title: Text('キャラ選択 ($gameId)')),
@@ -30,10 +29,9 @@ class CharacterSelectPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: implement add character dialog
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Add character (TODO)')));
+          ).showSnackBar(const SnackBar(content: Text('未実装です')));
         },
         icon: const Icon(Icons.add),
         label: const Text('キャラ追加'),

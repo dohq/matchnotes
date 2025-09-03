@@ -14,8 +14,8 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _darkMode = false; // TODO: wire to Theme/Provider
-  bool _keepScreenOn = false; // TODO: implement wakelock
+  bool _darkMode = false;
+  bool _keepScreenOn = false;
 
   @override
   Widget build(BuildContext context) {

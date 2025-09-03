@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
       // v3: Games table added. createAll() already covers it for fresh installs.
     },
     onUpgrade: (m, from, to) async {
-      // v2 placeholder: No structural changes yet.
+      // v2: No structural changes.
       // Example for future changes:
       // if (from < 2) {
       //   await m.addColumn(dailyCharacterRecords, dailyCharacterRecords.memo);
