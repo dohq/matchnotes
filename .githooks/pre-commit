@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run formatter
+if ! command -v dart >/dev/null 2>&1; then
+  echo "dart command not found" >&2
+  exit 1
+fi
+
+echo "[pre-commit] dart format"
+dart format --output=none --set-exit-if-changed .
+
+# Run analyzer
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "flutter command not found" >&2
+  exit 1
+fi
+
+echo "[pre-commit] flutter analyze"
+flutter analyze
+
+echo "[pre-commit] OK"
