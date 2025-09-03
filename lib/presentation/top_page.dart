@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
@@ -21,7 +20,6 @@ class _TopPageState extends ConsumerState<TopPage> {
 
   @override
   Widget build(BuildContext context) {
-    final df = DateFormat('yyyy-MM-dd');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matchnotes'),
@@ -40,11 +38,6 @@ class _TopPageState extends ConsumerState<TopPage> {
         child: ListView(
           children: [
             // Calendar
-            Text(
-              'Calendar (focused: ${df.format(_focusedDay)})',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
