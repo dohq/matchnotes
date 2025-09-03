@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:matchnotes/infrastructure/providers.dart';
+import 'package:matchnotes/domain/entities.dart' as domain;
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -14,110 +16,112 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const DemoPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class DemoPage extends ConsumerStatefulWidget {
+  const DemoPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<DemoPage> createState() => _DemoPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _DemoPageState extends ConsumerState<DemoPage> {
+  String summaryText = 'No data';
+  String memoText = '-';
 
-  void _incrementCounter() {
+  final gameId = 'demo-game';
+  final c1 = 'char-1';
+  final c2 = 'char-2';
+  DateTime get today => DateTime.now();
+  Future<void> _refreshSummary() async {
+    final usecase = await ref.read(getDailyGameSummaryUsecaseProvider.future);
+    final s = await usecase.execute(gameId: gameId, date: today);
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      final wr = s.winRate;
+      final wrText = wr == null ? 'n/a' : wr.toStringAsFixed(2);
+      summaryText = 'wins=${s.wins}, losses=${s.losses}, winRate=$wrText';
+    });
+  }
+
+  Future<void> _addWinC1() async {
+    final usecase = await ref.read(addWinUsecaseProvider.future);
+    await usecase.execute(gameId: gameId, characterId: c1, date: today);
+    await _refreshSummary();
+  }
+
+  Future<void> _addLossC2() async {
+    final usecase = await ref.read(addLossUsecaseProvider.future);
+    await usecase.execute(gameId: gameId, characterId: c2, date: today);
+    await _refreshSummary();
+  }
+
+  Future<void> _copyMemoFromPrevForC1() async {
+    final copy = await ref.read(copyMemoFromPreviousDayUsecaseProvider.future);
+    await copy.execute(gameId: gameId, characterId: c1, date: today);
+
+    final repo = await ref.read(dailyCharacterRecordRepositoryProvider.future);
+    final id = domain.DailyCharacterRecordId(
+      gameId: gameId,
+      characterId: c1,
+      date: DateTime(today.year, today.month, today.day),
+    );
+    final rec = await repo.findById(id);
+    setState(() {
+      memoText = rec?.memo ?? '-';
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Matchnotes Demo'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Summary: $summaryText'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _addWinC1,
+                  child: const Text('Add Win (c1)'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _addLossC2,
+                  child: const Text('Add Loss (c2)'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _refreshSummary,
+                  child: const Text('Refresh Summary'),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Text('Today memo (c1): $memoText'),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _copyMemoFromPrevForC1,
+              child: const Text('Copy memo from previous day (c1)'),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tip: create a previous day record for c1 with a memo to test copy.',
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
