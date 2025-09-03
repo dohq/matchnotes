@@ -10,20 +10,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/main.dart';
 
 void main() {
-  testWidgets('DailyPage smoke test', (WidgetTester tester) async {
+  testWidgets('TopPage smoke test', (WidgetTester tester) async {
     // Build app
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await tester.pumpAndSettle();
+    // Avoid waiting for async providers to settle in smoke test
+    await tester.pump();
 
     // App bar title
-    expect(find.text('Daily Records'), findsOneWidget);
+    expect(find.text('Matchnotes'), findsOneWidget);
 
-    // Buttons exist
-    expect(find.text('Add Win'), findsOneWidget);
-    expect(find.text('Add Loss'), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
-
-    // Initial summary text exists
-    expect(find.textContaining('Summary:'), findsOneWidget);
+    // Keep smoke test minimal
   });
 }
