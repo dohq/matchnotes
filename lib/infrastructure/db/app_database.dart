@@ -2,6 +2,15 @@ import 'package:drift/drift.dart';
 
 part 'app_database.g.dart';
 
+@DataClassName('GameRow')
+class Games extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DataClassName('DailyCharacterRecordRow')
 class DailyCharacterRecords extends Table {
   TextColumn get gameId => text()();
@@ -16,12 +25,12 @@ class DailyCharacterRecords extends Table {
   Set<Column> get primaryKey => {gameId, characterId, yyyymmdd};
 }
 
-@DriftDatabase(tables: [DailyCharacterRecords])
+@DriftDatabase(tables: [DailyCharacterRecords, Games])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,6 +39,7 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
       // v2: If you add new indexes/columns later, also apply them here so
       // fresh installs at schemaVersion=2 have the same schema as upgraded ones.
+      // v3: Games table added. createAll() already covers it for fresh installs.
     },
     onUpgrade: (m, from, to) async {
       // v2 placeholder: No structural changes yet.
@@ -38,6 +48,10 @@ class AppDatabase extends _$AppDatabase {
       //   await m.addColumn(dailyCharacterRecords, dailyCharacterRecords.memo);
       //   await m.createIndex(Index('idx_daily_game_day', [...]));
       // }
+      if (from < 3) {
+        // Create Games table for existing users upgrading to v3
+        await m.createTable(games);
+      }
     },
     beforeOpen: (details) async {
       // Place for PRAGMA or seeding if needed
@@ -79,5 +93,15 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> upsertRecord(Insertable<DailyCharacterRecordRow> row) async {
     await into(dailyCharacterRecords).insertOnConflictUpdate(row);
+  }
+
+  // Games DAO helpers
+  Future<List<GameRow>> fetchAllGames() async {
+    final q = select(games)..orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return q.get();
+  }
+
+  Future<void> upsertGame(Insertable<GameRow> row) async {
+    await into(games).insertOnConflictUpdate(row);
   }
 }
