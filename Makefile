@@ -9,7 +9,7 @@ COVERAGE_HTML_DIR=$(COVERAGE_DIR)/html
 EMULATOR_AVD?=Pixel_8a_API_34
 ADB?=adb
 
-.PHONY: format lint test coverage coverage-html emulator-start emulator-stop install-hooks hooks
+.PHONY: format lint test coverage coverage-html emulator-start emulator-stop install-hooks hooks build
 
 format:
 	$(DART) format .
@@ -20,6 +20,10 @@ lint:
 # Unit/widget tests
 test:
 	$(FLUTTER) test
+
+# Code generation (drift, etc.)
+build:
+	$(DART) run build_runner build --delete-conflicting-outputs
 
 # Generate lcov.info under coverage/
 coverage:
