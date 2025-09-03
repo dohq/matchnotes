@@ -129,24 +129,24 @@ class _MonthlyWinRateChart extends ConsumerWidget {
   }
 
   Widget _skeleton(BuildContext context) => Container(
-        height: 220,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.center,
-        child: const CircularProgressIndicator.adaptive(),
-      );
+    height: 220,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    alignment: Alignment.center,
+    child: const CircularProgressIndicator.adaptive(),
+  );
 
   Widget _errorBox(BuildContext context, Object e) => Container(
-        height: 220,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.center,
-        child: Text('読み込みエラー: $e'),
-      );
+    height: 220,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    alignment: Alignment.center,
+    child: Text('読み込みエラー: $e'),
+  );
 }
 
 class _ChartWithLegend extends StatelessWidget {
@@ -197,8 +197,12 @@ class _ChartWithLegend extends StatelessWidget {
                     ),
                   ),
                 ),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
               ),
               lineBarsData: [
                 for (var i = 0; i < series.length; i++)
@@ -207,8 +211,7 @@ class _ChartWithLegend extends StatelessWidget {
                     color: palette[i],
                     barWidth: 2,
                     dotData: FlDotData(show: true),
-                    spots: series[i]
-                        .points
+                    spots: series[i].points
                         .map((p) => FlSpot(p.day.day.toDouble(), p.winRate))
                         .toList(growable: false),
                   ),

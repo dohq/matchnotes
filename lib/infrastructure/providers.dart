@@ -8,6 +8,8 @@ import 'package:matchnotes/domain/usecases/add_loss.dart';
 import 'package:matchnotes/domain/usecases/get_daily_game_summary.dart';
 import 'package:matchnotes/domain/usecases/copy_memo_from_previous_day.dart';
 import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
+import 'package:matchnotes/domain/usecases/export_daily_records_csv.dart';
+import 'package:matchnotes/domain/usecases/import_daily_records_csv.dart';
 
 // Async DB provider
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
@@ -60,3 +62,19 @@ final getMonthlyWinRatesPerGameUsecaseProvider =
       final db = await ref.watch(appDatabaseProvider.future);
       return GetMonthlyWinRatesPerGameUsecase(repo, db);
     });
+
+final exportDailyRecordsCsvUsecaseProvider =
+    FutureProvider<ExportDailyRecordsCsvUsecase>((ref) async {
+  final repo = await ref.watch(
+    dailyCharacterRecordRepositoryProvider.future,
+  );
+  return ExportDailyRecordsCsvUsecase(repo);
+});
+
+final importDailyRecordsCsvUsecaseProvider =
+    FutureProvider<ImportDailyRecordsCsvUsecase>((ref) async {
+  final repo = await ref.watch(
+    dailyCharacterRecordRepositoryProvider.future,
+  );
+  return ImportDailyRecordsCsvUsecase(repo);
+});

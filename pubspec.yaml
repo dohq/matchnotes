@@ -44,6 +44,8 @@ dependencies:
   intl: ^0.20.2
   collection: ^1.18.0
   fl_chart: ^0.69.0
+  csv: ^5.0.2
+  file_picker: ^8.0.3
 
 dev_dependencies:
   flutter_test:
