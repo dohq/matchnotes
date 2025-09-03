@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/domain/entities.dart' as domain;
-import 'package:matchnotes/presentation/daily_page.dart';
+import 'package:matchnotes/presentation/top_page.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const DailyPage(),
+      home: const TopPage(),
     );
   }
 }

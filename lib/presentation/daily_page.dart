@@ -20,6 +20,10 @@ class _DailyPageState extends ConsumerState<DailyPage> {
   int _losses = 0;
   String? _memo;
   String _summary = 'wins=0, losses=0, winRate=n/a';
+  final TextEditingController _memoCtl = TextEditingController();
+
+  bool _busy = false;
+  List<domain.DailyCharacterRecord> _dailyList = const [];
 
   String get gameId => _gameIdCtl.text.trim();
   String get charId => _charIdCtl.text.trim();
@@ -32,7 +36,12 @@ class _DailyPageState extends ConsumerState<DailyPage> {
   }
 
   Future<void> _refreshAll() async {
-    await Future.wait([_refreshSummary(), _refreshRecord()]);
+    setState(() => _busy = true);
+    try {
+      await Future.wait([_refreshSummary(), _refreshRecord(), _refreshList()]);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _refreshSummary() async {
@@ -58,39 +67,80 @@ class _DailyPageState extends ConsumerState<DailyPage> {
       _wins = rec?.wins ?? 0;
       _losses = rec?.losses ?? 0;
       _memo = rec?.memo;
+      _memoCtl.text = _memo ?? '';
     });
   }
 
+  Future<void> _refreshList() async {
+    final repo = await ref.read(dailyCharacterRecordRepositoryProvider.future);
+    final list = await repo.findByGameAndDay(gameId: gameId, day: day);
+    setState(() => _dailyList = list);
+  }
+
   Future<void> _addWin() async {
-    final addWin = await ref.read(addWinUsecaseProvider.future);
-    await addWin.execute(gameId: gameId, characterId: charId, date: day);
-    await _refreshAll();
+    setState(() => _busy = true);
+    try {
+      final addWin = await ref.read(addWinUsecaseProvider.future);
+      await addWin.execute(gameId: gameId, characterId: charId, date: day);
+      await _refreshAll();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _addLoss() async {
-    final addLoss = await ref.read(addLossUsecaseProvider.future);
-    await addLoss.execute(gameId: gameId, characterId: charId, date: day);
-    await _refreshAll();
+    setState(() => _busy = true);
+    try {
+      final addLoss = await ref.read(addLossUsecaseProvider.future);
+      await addLoss.execute(gameId: gameId, characterId: charId, date: day);
+      await _refreshAll();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _saveMemo() async {
-    final repo = await ref.read(dailyCharacterRecordRepositoryProvider.future);
-    final id = domain.DailyCharacterRecordId(
-      gameId: gameId,
-      characterId: charId,
-      date: day,
-    );
-    final current =
-        await repo.findById(id) ??
-        domain.DailyCharacterRecord(id: id, wins: 0, losses: 0, memo: null);
-    await repo.upsert(current.copyWith(memo: _memo));
-    await _refreshRecord();
+    setState(() => _busy = true);
+    try {
+      final repo = await ref.read(
+        dailyCharacterRecordRepositoryProvider.future,
+      );
+      final id = domain.DailyCharacterRecordId(
+        gameId: gameId,
+        characterId: charId,
+        date: day,
+      );
+      final current =
+          await repo.findById(id) ??
+          domain.DailyCharacterRecord(id: id, wins: 0, losses: 0, memo: null);
+      await repo.upsert(current.copyWith(memo: _memo));
+      await _refreshRecord();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Memo saved.')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _copyMemoFromPrev() async {
-    final copy = await ref.read(copyMemoFromPreviousDayUsecaseProvider.future);
-    await copy.execute(gameId: gameId, characterId: charId, date: day);
-    await _refreshRecord();
+    setState(() => _busy = true);
+    try {
+      final copy = await ref.read(
+        copyMemoFromPreviousDayUsecaseProvider.future,
+      );
+      await copy.execute(gameId: gameId, characterId: charId, date: day);
+      await _refreshRecord();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Copied from previous day.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -110,7 +160,20 @@ class _DailyPageState extends ConsumerState<DailyPage> {
   Widget build(BuildContext context) {
     final df = DateFormat('yyyy-MM-dd');
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily Records')),
+      appBar: AppBar(
+        title: const Text('Daily Records'),
+        actions: [
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -174,25 +237,34 @@ class _DailyPageState extends ConsumerState<DailyPage> {
               decoration: const InputDecoration(labelText: 'Memo'),
               minLines: 1,
               maxLines: 3,
-              controller: TextEditingController(text: _memo)
-                ..selection = TextSelection.fromPosition(
-                  TextPosition(offset: (_memo ?? '').length),
-                ),
+              controller: _memoCtl,
               onChanged: (v) => _memo = v.isEmpty ? null : v,
             ),
             const SizedBox(height: 8),
             Row(
               children: [
                 ElevatedButton(
-                  onPressed: _saveMemo,
+                  onPressed: _busy ? null : _saveMemo,
                   child: const Text('Save Memo'),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
-                  onPressed: _copyMemoFromPrev,
+                  onPressed: _busy ? null : _copyMemoFromPrev,
                   child: const Text('Copy Memo from Previous Day'),
                 ),
               ],
+            ),
+            const Divider(height: 24),
+            Text('Today list (${df.format(day)}):'),
+            const SizedBox(height: 8),
+            ..._dailyList.map(
+              (e) => ListTile(
+                title: Text(e.id.characterId),
+                subtitle: Text(
+                  'wins=${e.wins}, losses=${e.losses}\n${e.memo ?? ''}',
+                ),
+                isThreeLine: (e.memo ?? '').isNotEmpty,
+              ),
             ),
           ],
         ),
