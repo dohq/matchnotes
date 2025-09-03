@@ -70,10 +70,7 @@ class _TopPageState extends ConsumerState<TopPage> {
             ),
             const SizedBox(height: 16),
             // Graph
-            Text(
-              'Win rate graph (%)',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('日別勝率グラフ %', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             _MonthlyWinRateChart(
               month: DateTime(_focusedDay.year, _focusedDay.month, 1),

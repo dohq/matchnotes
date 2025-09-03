@@ -14,19 +14,24 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _darkMode = false;
   bool _keepScreenOn = false;
 
   @override
   Widget build(BuildContext context) {
+    final mode = ref.watch(themeModeProvider);
+    final isDark = mode == ThemeMode.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('設定')),
       body: ListView(
         children: [
           SwitchListTile(
             title: const Text('ダークモード'),
-            value: _darkMode,
-            onChanged: (v) => setState(() => _darkMode = v),
+            value: isDark,
+            onChanged: (v) {
+              ref.read(themeModeProvider.notifier).state = v
+                  ? ThemeMode.dark
+                  : ThemeMode.light;
+            },
           ),
           SwitchListTile(
             title: const Text('勝敗登録ページで画面ロック防止'),
