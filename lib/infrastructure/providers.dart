@@ -65,16 +65,16 @@ final getMonthlyWinRatesPerGameUsecaseProvider =
 
 final exportDailyRecordsCsvUsecaseProvider =
     FutureProvider<ExportDailyRecordsCsvUsecase>((ref) async {
-  final repo = await ref.watch(
-    dailyCharacterRecordRepositoryProvider.future,
-  );
-  return ExportDailyRecordsCsvUsecase(repo);
-});
+      final repo = await ref.watch(
+        dailyCharacterRecordRepositoryProvider.future,
+      );
+      return ExportDailyRecordsCsvUsecase(repo);
+    });
 
 final importDailyRecordsCsvUsecaseProvider =
     FutureProvider<ImportDailyRecordsCsvUsecase>((ref) async {
-  final repo = await ref.watch(
-    dailyCharacterRecordRepositoryProvider.future,
-  );
-  return ImportDailyRecordsCsvUsecase(repo);
-});
+      final repo = await ref.watch(
+        dailyCharacterRecordRepositoryProvider.future,
+      );
+      return ImportDailyRecordsCsvUsecase(repo);
+    });

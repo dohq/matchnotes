@@ -50,7 +50,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   return;
                 }
                 final path = result.files.single.path!;
-                final usecaseAsync = ref.read(importDailyRecordsCsvUsecaseProvider);
+                final usecaseAsync = ref.read(
+                  importDailyRecordsCsvUsecaseProvider,
+                );
                 await usecaseAsync.when(
                   data: (usecase) async {
                     try {
@@ -77,9 +79,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   },
                 );
               } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('インポート失敗: $e')),
-                );
+                messenger.showSnackBar(SnackBar(content: Text('インポート失敗: $e')));
               }
             },
           ),
@@ -88,7 +88,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             title: const Text('データのエクスポート'),
             onTap: () async {
               final messenger = ScaffoldMessenger.of(context);
-              final usecaseAsync = ref.read(exportDailyRecordsCsvUsecaseProvider);
+              final usecaseAsync = ref.read(
+                exportDailyRecordsCsvUsecaseProvider,
+              );
               await usecaseAsync.when(
                 data: (usecase) async {
                   try {
