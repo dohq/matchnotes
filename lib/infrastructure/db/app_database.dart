@@ -111,16 +111,16 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> renameGame({required String id, required String name}) async {
-    await (update(games)..where((t) => t.id.equals(id))).write(GamesCompanion(
-      name: Value(name),
-    ));
+    await (update(
+      games,
+    )..where((t) => t.id.equals(id))).write(GamesCompanion(name: Value(name)));
   }
 
   Future<void> deleteGameAndRecords(String id) async {
     await transaction(() async {
-      await (delete(dailyCharacterRecords)
-            ..where((t) => t.gameId.equals(id)))
-          .go();
+      await (delete(
+        dailyCharacterRecords,
+      )..where((t) => t.gameId.equals(id))).go();
       await (delete(games)..where((t) => t.id.equals(id))).go();
     });
   }

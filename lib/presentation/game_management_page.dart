@@ -12,7 +12,8 @@ class GameManagementPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('ゲーム管理')),
       body: gamesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+        loading: () =>
+            const Center(child: CircularProgressIndicator.adaptive()),
         error: (e, st) => Center(child: Text('読み込みエラー: $e')),
         data: (games) {
           if (games.isEmpty) {
@@ -66,9 +67,7 @@ class GameManagementPage extends ConsumerWidget {
             children: [
               TextField(
                 controller: controllerId,
-                decoration: const InputDecoration(
-                  labelText: 'ゲームID (英数字推奨)',
-                ),
+                decoration: const InputDecoration(labelText: 'ゲームID (英数字推奨)'),
               ),
               TextField(
                 controller: controllerName,
@@ -96,7 +95,9 @@ class GameManagementPage extends ConsumerWidget {
     );
     if (result == null) return;
     final db = await ref.read(appDatabaseProvider.future);
-    await db.upsertGame(GamesCompanion.insert(id: result.id, name: result.name));
+    await db.upsertGame(
+      GamesCompanion.insert(id: result.id, name: result.name),
+    );
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, GameRow g) async {
@@ -116,7 +117,8 @@ class GameManagementPage extends ConsumerWidget {
               child: const Text('キャンセル'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              onPressed: () =>
+                  Navigator.of(context).pop(controller.text.trim()),
               child: const Text('更新'),
             ),
           ],
