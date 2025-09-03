@@ -148,6 +148,24 @@ class _ChartWithLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    // X軸の最小値・目盛間隔を月の日数に合わせて調整し、月末(30/31)ラベルを表示する
+    // 31日の場合: min=1, interval=5 → 1,6,11,16,21,26,31
+    // 30日など:  min=0, intervalを(10→5→2→1)から分割可能なものを選択 → 0,5,10,15,20,25,30 など
+    double xMin;
+    double xInterval;
+    if (daysInMonth % 5 == 1) {
+      xMin = 1;
+      xInterval = 5;
+    } else {
+      xMin = 0;
+      final candidates = [10, 5, 2, 1];
+      xInterval = candidates
+          .firstWhere(
+            (s) => daysInMonth % s == 0 && daysInMonth / s <= 7,
+            orElse: () => 5,
+          )
+          .toDouble();
+    }
     final palette = _buildPalette(context, series.length);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,12 +184,25 @@ class _ChartWithLegend extends StatelessWidget {
               overflowMode: LegendItemOverflowMode.wrap,
             ),
             primaryXAxis: NumericAxis(
-              minimum: 1,
+              minimum: xMin,
               maximum: daysInMonth.toDouble(),
-              interval: (daysInMonth / 6).ceilToDouble(),
+              interval: xInterval,
               edgeLabelPlacement: EdgeLabelPlacement.shift,
               majorGridLines: const MajorGridLines(width: 0),
               labelStyle: Theme.of(context).textTheme.bodySmall,
+              axisLabelFormatter: (args) {
+                final v = args.value.toInt();
+                if (v == 0) {
+                  return ChartAxisLabel(
+                    '',
+                    Theme.of(context).textTheme.bodySmall!,
+                  );
+                }
+                return ChartAxisLabel(
+                  v.toString(),
+                  Theme.of(context).textTheme.bodySmall!,
+                );
+              },
             ),
             primaryYAxis: NumericAxis(
               minimum: 0,
