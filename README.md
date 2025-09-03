@@ -62,8 +62,8 @@ sudo apt-get update && sudo apt-get install -y lcov
   - `appDatabaseProvider`（Async）
   - `dailyCharacterRecordRepositoryProvider`（Async）
   - ユースケース用プロバイダ（`AddWin`/`AddLoss`/`GetDailyGameSummary`/`CopyMemoFromPreviousDay`）
-- **UI（デモ）**: `lib/main.dart` の `DemoPage`
-  - ボタンでユースケースを実行し、日次集計・メモコピーを確認可能
+- **UI（DailyPage）**: `lib/presentation/daily_page.dart`（`main.dart` から起動）
+  - ゲーム/キャラ/日付の指定、勝敗加算、メモ編集、前日メモコピー、日次サマリ表示
 
 ## テスト
 
@@ -85,6 +85,10 @@ make test
  - riverpod: https://pub.dev/packages/flutter_riverpod
  - drift: https://drift.simonbinder.eu/
  - table_calendar: https://pub.dev/packages/table_calendar
+
+### DBマイグレーションドキュメント
+
+- `docs/db_migration.md`
 
 ## 注意
 
