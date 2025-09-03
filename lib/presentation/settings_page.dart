@@ -70,11 +70,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   data: (usecase) async {
                     try {
                       final file = File(path);
-                      final report = await usecase.executeWithReport(file: file);
+                      final report = await usecase.executeWithReport(
+                        file: file,
+                      );
                       // 上位5件のみ表示、残りは件数で示す
                       final maxShow = 5;
                       final shownErrors = report.errors.take(maxShow).toList();
-                      final remaining = report.errors.length - shownErrors.length;
+                      final remaining =
+                          report.errors.length - shownErrors.length;
                       // 表示用本文
                       final sb = StringBuffer()
                         ..writeln('インポート: ${report.imported} 件')
@@ -93,7 +96,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('インポート結果'),
-                          content: SingleChildScrollView(child: Text(sb.toString())),
+                          content: SingleChildScrollView(
+                            child: Text(sb.toString()),
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(),

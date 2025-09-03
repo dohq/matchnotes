@@ -26,7 +26,8 @@ if [[ -n "$RUNNING" ]]; then
 fi
 
 # Boot emulator headless by default; override via EMU_OPTS
-EMU_OPTS=${EMU_OPTS:-"-no-boot-anim -no-snapshot -no-window"}
+# EMU_OPTS=${EMU_OPTS:-"-no-boot-anim -no-snapshot -no-window"}
+EMU_OPTS=${EMU_OPTS:-"-no-boot-anim -no-snapshot"}
 "$EMULATOR_BIN" -avd "$AVD_NAME" $EMU_OPTS &
 
 # Wait for boot complete

@@ -6,6 +6,7 @@ import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 import 'game_select_page.dart';
 import 'settings_page.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class TopPage extends ConsumerStatefulWidget {
   const TopPage({super.key});
@@ -15,7 +16,8 @@ class TopPage extends ConsumerStatefulWidget {
 }
 
 class _TopPageState extends ConsumerState<TopPage> {
-  final DateTime _focusedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
   @override
   Widget build(BuildContext context) {
@@ -37,50 +39,40 @@ class _TopPageState extends ConsumerState<TopPage> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            // Calendar placeholder
+            // Calendar
             Text(
               'Calendar (focused: ${df.format(_focusedDay)})',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Container(
-              height: 220,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(12),
               ),
-              alignment: Alignment.center,
-              child: const Text('Calendar widget placeholder'),
-            ),
-            const SizedBox(height: 16),
-            // Graph
-            Text(
-              'Win rate graph',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            _MonthlyWinRateChart(
-              month: DateTime(_focusedDay.year, _focusedDay.month, 1),
-            ),
-            const SizedBox(height: 16),
-            // Daily rates list placeholder
-            Text(
-              'Daily win rates',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            ...List.generate(
-              5,
-              (i) => ListTile(
-                leading: const Icon(Icons.sports_esports),
-                title: Text('2025-09-${(i + 1).toString().padLeft(2, '0')}'),
-                subtitle: const Text('winRate: --'),
+              padding: const EdgeInsets.all(8),
+              child: TableCalendar(
+                focusedDay: _focusedDay,
+                firstDay: DateTime.utc(2000, 1, 1),
+                lastDay: DateTime.utc(2100, 12, 31),
+                headerStyle: const HeaderStyle(formatButtonVisible: false),
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selected, focused) {
+                  setState(() {
+                    _selectedDay = selected;
+                    _focusedDay = focused;
+                  });
+                },
+                onPageChanged: (focused) {
+                  setState(() => _focusedDay = focused);
+                },
+                calendarFormat: CalendarFormat.month,
               ),
             ),
             const SizedBox(height: 16),
             // Graph
             Text(
-              'Win rate graph',
+              'Win rate graph (%)',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -131,7 +123,7 @@ class _MonthlyWinRateChart extends ConsumerWidget {
   Widget _skeleton(BuildContext context) => Container(
     height: 220,
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(12),
     ),
     alignment: Alignment.center,
@@ -165,7 +157,7 @@ class _ChartWithLegend extends StatelessWidget {
           height: 220,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
           ),
           child: LineChart(
@@ -173,16 +165,16 @@ class _ChartWithLegend extends StatelessWidget {
               minX: 1,
               maxX: daysInMonth.toDouble(),
               minY: 0,
-              maxY: 1,
+              maxY: 100,
               gridData: FlGridData(show: true, drawVerticalLine: false),
               titlesData: FlTitlesData(
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 36,
-                    interval: 0.25,
+                    reservedSize: 40,
+                    interval: 25,
                     getTitlesWidget: (value, meta) => Text(
-                      (value).toStringAsFixed(2),
+                      '${value.toInt()}%',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -212,7 +204,9 @@ class _ChartWithLegend extends StatelessWidget {
                     barWidth: 2,
                     dotData: FlDotData(show: true),
                     spots: series[i].points
-                        .map((p) => FlSpot(p.day.day.toDouble(), p.winRate))
+                        .map(
+                          (p) => FlSpot(p.day.day.toDouble(), p.winRate * 100),
+                        )
                         .toList(growable: false),
                   ),
               ],
