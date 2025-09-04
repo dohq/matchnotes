@@ -65,10 +65,8 @@ class CharacterSelectPage extends ConsumerWidget {
   }
 
   Future<void> _addCharacter(BuildContext context, WidgetRef ref) async {
-    final idController = TextEditingController();
     final nameController = TextEditingController();
-    final colorController = TextEditingController();
-    final data = await showDialog<({String id, String name, int? color})>(
+    final data = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -77,24 +75,10 @@ class CharacterSelectPage extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: idController,
-                decoration: const InputDecoration(
-                  labelText: 'キャラID (全体で一意に)',
-                  hintText: '例: sf6-ryu',
-                ),
-              ),
-              TextField(
                 controller: nameController,
                 decoration: const InputDecoration(
                   labelText: '表示名',
                   hintText: '例: リュウ',
-                ),
-              ),
-              TextField(
-                controller: colorController,
-                decoration: const InputDecoration(
-                  labelText: '色 (ARGB 8桁の16進, 任意)',
-                  hintText: '例: FF2196F3',
                 ),
               ),
             ],
@@ -106,18 +90,9 @@ class CharacterSelectPage extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () {
-                final id = idController.text.trim();
                 final name = nameController.text.trim();
-                if (id.isEmpty || name.isEmpty) return;
-                int? color;
-                final txt = colorController.text.trim();
-                if (txt.isNotEmpty) {
-                  final normalized = txt.replaceAll('#', '');
-                  if (RegExp(r'^[0-9a-fA-F]{8}$').hasMatch(normalized)) {
-                    color = int.parse(normalized, radix: 16);
-                  }
-                }
-                Navigator.of(context).pop((id: id, name: name, color: color));
+                if (name.isEmpty) return;
+                Navigator.of(context).pop(name);
               },
               child: const Text('追加'),
             ),
@@ -127,14 +102,34 @@ class CharacterSelectPage extends ConsumerWidget {
     );
     if (data == null) return;
     final db = await ref.read(appDatabaseProvider.future);
+    final id = _genId(prefix: 'char');
+    final color = _colorFromId(id);
     await db.upsertCharacter(
       CharactersCompanion.insert(
-        id: data.id,
+        id: id,
         gameId: gameId,
-        name: data.name,
-        colorArgb: Value(data.color),
+        name: data,
+        colorArgb: Value(color),
       ),
     );
     ref.invalidate(fetchCharactersByGameProvider(gameId));
+  }
+
+  String _genId({required String prefix}) {
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    final rand = (ms ^ hashCode) & 0x7fffffff;
+    final tail = rand.toRadixString(36);
+    return '$prefix-$ms-$tail';
+  }
+
+  int _colorFromId(String id) {
+    // 決定論的に色を生成（簡易）：idのhashからHを作り、固定S/LでHSV->ARGB
+    final h = (id.hashCode & 0xFFFF) % 360;
+    final color = HSVColor.fromAHSV(1.0, h.toDouble(), 0.5, 0.85).toColor();
+    final a = (color.a * 255.0).round() & 0xff;
+    final r = (color.r * 255.0).round() & 0xff;
+    final g = (color.g * 255.0).round() & 0xff;
+    final b = (color.b * 255.0).round() & 0xff;
+    return (a << 24) | (r << 16) | (g << 8) | b; // ARGB int
   }
 }

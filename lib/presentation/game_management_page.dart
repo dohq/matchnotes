@@ -55,9 +55,8 @@ class GameManagementPage extends ConsumerWidget {
   }
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final controllerId = TextEditingController();
     final controllerName = TextEditingController();
-    final result = await showDialog<({String id, String name})>(
+    final result = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -65,10 +64,6 @@ class GameManagementPage extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: controllerId,
-                decoration: const InputDecoration(labelText: 'ゲームID (英数字推奨)'),
-              ),
               TextField(
                 controller: controllerName,
                 decoration: const InputDecoration(labelText: '表示名'),
@@ -82,10 +77,9 @@ class GameManagementPage extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () {
-                final id = controllerId.text.trim();
                 final name = controllerName.text.trim();
-                if (id.isEmpty || name.isEmpty) return;
-                Navigator.of(context).pop((id: id, name: name));
+                if (name.isEmpty) return;
+                Navigator.of(context).pop(name);
               },
               child: const Text('追加'),
             ),
@@ -95,9 +89,16 @@ class GameManagementPage extends ConsumerWidget {
     );
     if (result == null) return;
     final db = await ref.read(appDatabaseProvider.future);
-    await db.upsertGame(
-      GamesCompanion.insert(id: result.id, name: result.name),
-    );
+    final id = _genId(prefix: 'game');
+    await db.upsertGame(GamesCompanion.insert(id: id, name: result));
+  }
+
+  String _genId({required String prefix}) {
+    // 簡易な一意ID: prefix-<epoch>-<randBase36>
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    final rand = (ms ^ hashCode) & 0x7fffffff;
+    final tail = rand.toRadixString(36);
+    return '$prefix-$ms-$tail';
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, GameRow g) async {
