@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../infrastructure/providers.dart';
 import '../infrastructure/db/app_database.dart';
 import 'character_select_page.dart';
-import 'game_management_page.dart';
 
 class GameSelectPage extends ConsumerWidget {
   const GameSelectPage({super.key});
@@ -54,11 +53,7 @@ class GameSelectPage extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const GameManagementPage()));
-        },
+        onPressed: () => _addGame(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('ゲーム追加'),
       ),
@@ -135,6 +130,49 @@ class GameSelectPage extends ConsumerWidget {
         }
         break;
     }
+  }
+
+  Future<void> _addGame(BuildContext context, WidgetRef ref) async {
+    final controllerName = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ゲームを追加'),
+        content: TextField(
+          controller: controllerName,
+          decoration: const InputDecoration(labelText: '表示名'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final v = controllerName.text.trim();
+              if (v.isEmpty) return;
+              Navigator.pop(context, v);
+            },
+            child: const Text('追加'),
+          ),
+        ],
+      ),
+    );
+    if (name == null) return;
+    final db = await ref.read(appDatabaseProvider.future);
+    final id = _genId(prefix: 'game');
+    await db.upsertGame(GamesCompanion.insert(id: id, name: name));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('追加しました')));
+  }
+
+  String _genId({required String prefix}) {
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    final rand = (ms ^ hashCode) & 0x7fffffff;
+    final tail = rand.toRadixString(36);
+    return '$prefix-$ms-$tail';
   }
 }
 
