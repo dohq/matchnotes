@@ -251,9 +251,13 @@ class _ChartWithLegend extends StatelessWidget {
                     );
                     rows.add(const SizedBox(height: 4));
                     // Combined
+                    final win = pp.source.wins;
+                    final loss = pp.source.losses;
+                    final total = win + loss;
+                    final rate = pp.source.winRate * 100;
                     rows.add(
                       Text(
-                        '合算: ${pp.source.wins}-${pp.source.losses} (${fmtPct(pp.source.winRate * 100)}%)',
+                        '合算: Total:$total: Win:$win Loss:$loss (${fmtPct(rate)}%)',
                       ),
                     );
                     // Per character (only ones with records)
@@ -264,8 +268,13 @@ class _ChartWithLegend extends StatelessWidget {
                     for (final e in entries) {
                       final cw = e.value.wins;
                       final cl = e.value.losses;
+                      final total = cw + cl;
                       final rate = e.value.rate * 100;
-                      rows.add(Text('${e.key}: $cw-$cl (${fmtPct(rate)}%)'));
+                      rows.add(
+                        Text(
+                          '${e.key} Total:$total: Win:$cw Loss:$cl (${fmtPct(rate)}%)',
+                        ),
+                      );
                     }
                     return Container(
                       padding: const EdgeInsets.all(8),
