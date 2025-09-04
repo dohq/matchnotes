@@ -25,12 +25,23 @@ class DailyCharacterRecords extends Table {
   Set<Column> get primaryKey => {gameId, characterId, yyyymmdd};
 }
 
-@DriftDatabase(tables: [DailyCharacterRecords, Games])
+@DataClassName('CharacterRow')
+class Characters extends Table {
+  TextColumn get id => text()();
+  TextColumn get gameId => text()();
+  TextColumn get name => text()();
+  IntColumn get colorArgb => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [DailyCharacterRecords, Games, Characters])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -51,6 +62,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         // Create Games table for existing users upgrading to v3
         await m.createTable(games);
+      }
+      if (from < 4) {
+        // Create Characters table for existing users upgrading to v4
+        await m.createTable(characters);
       }
     },
     beforeOpen: (details) async {
@@ -79,6 +94,23 @@ class AppDatabase extends _$AppDatabase {
       ..limit(1);
     final row = await q.getSingleOrNull();
     return row;
+  }
+
+  // Characters DAO helpers
+  Future<List<CharacterRow>> fetchAllCharacters() async {
+    final q = select(characters)..orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return q.get();
+  }
+
+  Future<List<CharacterRow>> fetchCharactersByGame(String gameId) async {
+    final q = select(characters)
+      ..where((t) => t.gameId.equals(gameId))
+      ..orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return q.get();
+  }
+
+  Future<void> upsertCharacter(Insertable<CharacterRow> row) async {
+    await into(characters).insertOnConflictUpdate(row);
   }
 
   Future<List<DailyCharacterRecordRow>> fetchByGameAndDay({

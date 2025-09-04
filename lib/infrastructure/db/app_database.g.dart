@@ -619,12 +619,320 @@ class GamesCompanion extends UpdateCompanion<GameRow> {
   }
 }
 
+class $CharactersTable extends Characters
+    with TableInfo<$CharactersTable, CharacterRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CharactersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _gameIdMeta = const VerificationMeta('gameId');
+  @override
+  late final GeneratedColumn<String> gameId = GeneratedColumn<String>(
+    'game_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _colorArgbMeta = const VerificationMeta(
+    'colorArgb',
+  );
+  @override
+  late final GeneratedColumn<int> colorArgb = GeneratedColumn<int>(
+    'color_argb',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, gameId, name, colorArgb];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'characters';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CharacterRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('game_id')) {
+      context.handle(
+        _gameIdMeta,
+        gameId.isAcceptableOrUnknown(data['game_id']!, _gameIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_gameIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('color_argb')) {
+      context.handle(
+        _colorArgbMeta,
+        colorArgb.isAcceptableOrUnknown(data['color_argb']!, _colorArgbMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CharacterRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CharacterRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      gameId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}game_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      colorArgb: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color_argb'],
+      ),
+    );
+  }
+
+  @override
+  $CharactersTable createAlias(String alias) {
+    return $CharactersTable(attachedDatabase, alias);
+  }
+}
+
+class CharacterRow extends DataClass implements Insertable<CharacterRow> {
+  final String id;
+  final String gameId;
+  final String name;
+  final int? colorArgb;
+  const CharacterRow({
+    required this.id,
+    required this.gameId,
+    required this.name,
+    this.colorArgb,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['game_id'] = Variable<String>(gameId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || colorArgb != null) {
+      map['color_argb'] = Variable<int>(colorArgb);
+    }
+    return map;
+  }
+
+  CharactersCompanion toCompanion(bool nullToAbsent) {
+    return CharactersCompanion(
+      id: Value(id),
+      gameId: Value(gameId),
+      name: Value(name),
+      colorArgb: colorArgb == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorArgb),
+    );
+  }
+
+  factory CharacterRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CharacterRow(
+      id: serializer.fromJson<String>(json['id']),
+      gameId: serializer.fromJson<String>(json['gameId']),
+      name: serializer.fromJson<String>(json['name']),
+      colorArgb: serializer.fromJson<int?>(json['colorArgb']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'gameId': serializer.toJson<String>(gameId),
+      'name': serializer.toJson<String>(name),
+      'colorArgb': serializer.toJson<int?>(colorArgb),
+    };
+  }
+
+  CharacterRow copyWith({
+    String? id,
+    String? gameId,
+    String? name,
+    Value<int?> colorArgb = const Value.absent(),
+  }) => CharacterRow(
+    id: id ?? this.id,
+    gameId: gameId ?? this.gameId,
+    name: name ?? this.name,
+    colorArgb: colorArgb.present ? colorArgb.value : this.colorArgb,
+  );
+  CharacterRow copyWithCompanion(CharactersCompanion data) {
+    return CharacterRow(
+      id: data.id.present ? data.id.value : this.id,
+      gameId: data.gameId.present ? data.gameId.value : this.gameId,
+      name: data.name.present ? data.name.value : this.name,
+      colorArgb: data.colorArgb.present ? data.colorArgb.value : this.colorArgb,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CharacterRow(')
+          ..write('id: $id, ')
+          ..write('gameId: $gameId, ')
+          ..write('name: $name, ')
+          ..write('colorArgb: $colorArgb')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, gameId, name, colorArgb);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CharacterRow &&
+          other.id == this.id &&
+          other.gameId == this.gameId &&
+          other.name == this.name &&
+          other.colorArgb == this.colorArgb);
+}
+
+class CharactersCompanion extends UpdateCompanion<CharacterRow> {
+  final Value<String> id;
+  final Value<String> gameId;
+  final Value<String> name;
+  final Value<int?> colorArgb;
+  final Value<int> rowid;
+  const CharactersCompanion({
+    this.id = const Value.absent(),
+    this.gameId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.colorArgb = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CharactersCompanion.insert({
+    required String id,
+    required String gameId,
+    required String name,
+    this.colorArgb = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       gameId = Value(gameId),
+       name = Value(name);
+  static Insertable<CharacterRow> custom({
+    Expression<String>? id,
+    Expression<String>? gameId,
+    Expression<String>? name,
+    Expression<int>? colorArgb,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (gameId != null) 'game_id': gameId,
+      if (name != null) 'name': name,
+      if (colorArgb != null) 'color_argb': colorArgb,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CharactersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? gameId,
+    Value<String>? name,
+    Value<int?>? colorArgb,
+    Value<int>? rowid,
+  }) {
+    return CharactersCompanion(
+      id: id ?? this.id,
+      gameId: gameId ?? this.gameId,
+      name: name ?? this.name,
+      colorArgb: colorArgb ?? this.colorArgb,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (gameId.present) {
+      map['game_id'] = Variable<String>(gameId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (colorArgb.present) {
+      map['color_argb'] = Variable<int>(colorArgb.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CharactersCompanion(')
+          ..write('id: $id, ')
+          ..write('gameId: $gameId, ')
+          ..write('name: $name, ')
+          ..write('colorArgb: $colorArgb, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $DailyCharacterRecordsTable dailyCharacterRecords =
       $DailyCharacterRecordsTable(this);
   late final $GamesTable games = $GamesTable(this);
+  late final $CharactersTable characters = $CharactersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -632,6 +940,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     dailyCharacterRecords,
     games,
+    characters,
   ];
 }
 
@@ -1003,6 +1312,187 @@ typedef $$GamesTableProcessedTableManager =
       GameRow,
       PrefetchHooks Function()
     >;
+typedef $$CharactersTableCreateCompanionBuilder =
+    CharactersCompanion Function({
+      required String id,
+      required String gameId,
+      required String name,
+      Value<int?> colorArgb,
+      Value<int> rowid,
+    });
+typedef $$CharactersTableUpdateCompanionBuilder =
+    CharactersCompanion Function({
+      Value<String> id,
+      Value<String> gameId,
+      Value<String> name,
+      Value<int?> colorArgb,
+      Value<int> rowid,
+    });
+
+class $$CharactersTableFilterComposer
+    extends Composer<_$AppDatabase, $CharactersTable> {
+  $$CharactersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gameId => $composableBuilder(
+    column: $table.gameId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get colorArgb => $composableBuilder(
+    column: $table.colorArgb,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CharactersTableOrderingComposer
+    extends Composer<_$AppDatabase, $CharactersTable> {
+  $$CharactersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gameId => $composableBuilder(
+    column: $table.gameId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get colorArgb => $composableBuilder(
+    column: $table.colorArgb,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CharactersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CharactersTable> {
+  $$CharactersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get gameId =>
+      $composableBuilder(column: $table.gameId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get colorArgb =>
+      $composableBuilder(column: $table.colorArgb, builder: (column) => column);
+}
+
+class $$CharactersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CharactersTable,
+          CharacterRow,
+          $$CharactersTableFilterComposer,
+          $$CharactersTableOrderingComposer,
+          $$CharactersTableAnnotationComposer,
+          $$CharactersTableCreateCompanionBuilder,
+          $$CharactersTableUpdateCompanionBuilder,
+          (
+            CharacterRow,
+            BaseReferences<_$AppDatabase, $CharactersTable, CharacterRow>,
+          ),
+          CharacterRow,
+          PrefetchHooks Function()
+        > {
+  $$CharactersTableTableManager(_$AppDatabase db, $CharactersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CharactersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CharactersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CharactersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> gameId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int?> colorArgb = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CharactersCompanion(
+                id: id,
+                gameId: gameId,
+                name: name,
+                colorArgb: colorArgb,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String gameId,
+                required String name,
+                Value<int?> colorArgb = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CharactersCompanion.insert(
+                id: id,
+                gameId: gameId,
+                name: name,
+                colorArgb: colorArgb,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CharactersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CharactersTable,
+      CharacterRow,
+      $$CharactersTableFilterComposer,
+      $$CharactersTableOrderingComposer,
+      $$CharactersTableAnnotationComposer,
+      $$CharactersTableCreateCompanionBuilder,
+      $$CharactersTableUpdateCompanionBuilder,
+      (
+        CharacterRow,
+        BaseReferences<_$AppDatabase, $CharactersTable, CharacterRow>,
+      ),
+      CharacterRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1011,4 +1501,6 @@ class $AppDatabaseManager {
       $$DailyCharacterRecordsTableTableManager(_db, _db.dailyCharacterRecords);
   $$GamesTableTableManager get games =>
       $$GamesTableTableManager(_db, _db.games);
+  $$CharactersTableTableManager get characters =>
+      $$CharactersTableTableManager(_db, _db.characters);
 }

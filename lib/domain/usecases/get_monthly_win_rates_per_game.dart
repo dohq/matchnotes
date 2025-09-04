@@ -57,6 +57,13 @@ class GetMonthlyWinRatesPerGameUsecase {
       gameNameMap[g.id] = g.name;
     }
 
+    // Resolve character names (id -> name)
+    final charNameMap = <String, String>{};
+    final chars = await db.fetchAllCharacters();
+    for (final c in chars) {
+      charNameMap[c.id] = c.name;
+    }
+
     final result = <GameMonthlySeries>[];
     byGame.forEach((gameId, records) {
       final byDay = groupBy(records, (r) => _yyyymmddOf(r.id.date));
@@ -76,7 +83,8 @@ class GetMonthlyWinRatesPerGameUsecase {
           final cw = recs.fold<int>(0, (a, b) => a + b.wins);
           final cl = recs.fold<int>(0, (a, b) => a + b.losses);
           if (cw + cl > 0) {
-            byChar[chId] = CharWinLoss(wins: cw, losses: cl);
+            final display = charNameMap[chId] ?? chId;
+            byChar[display] = CharWinLoss(wins: cw, losses: cl);
           }
         });
         points.add(
