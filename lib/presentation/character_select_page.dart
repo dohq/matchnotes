@@ -15,63 +15,81 @@ class CharacterSelectPage extends ConsumerWidget {
     final asyncChars = ref.watch(fetchCharactersByGameProvider(gameId));
     return Scaffold(
       appBar: AppBar(title: Text('キャラ選択 ($gameId)')),
-      body: asyncChars.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator.adaptive()),
-        error: (e, _) => Center(child: Text('読み込みエラー: $e')),
-        data: (list) {
-          if (list.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('キャラが未登録です'),
-                  SizedBox(height: 8),
-                  Text('右下の + から追加してください'),
-                ],
-              ),
-            );
-          }
-          return ListView.separated(
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final c = list[index];
-              final color = c.colorArgb == null ? null : Color(c.colorArgb!);
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: color,
-                  child: const Icon(Icons.person),
-                ),
-                title: Text(c.name),
-                trailing: PopupMenuButton<_CharMenuAction>(
-                  onSelected: (a) => _onCharacterMenu(context, ref, a, c),
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: _CharMenuAction.edit,
-                      child: Text('名称変更'),
-                    ),
-                    PopupMenuItem(
-                      value: _CharMenuAction.delete,
-                      child: Text('削除'),
-                    ),
-                  ],
-                ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        RegisterPage(gameId: gameId, characterId: c.id),
+      body: Builder(
+        builder: (scaffoldCtx) {
+          return asyncChars.when(
+            loading: () =>
+                const Center(child: CircularProgressIndicator.adaptive()),
+            error: (e, _) => Center(child: Text('読み込みエラー: $e')),
+            data: (list) {
+              if (list.isEmpty) {
+                return const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('キャラが未登録です'),
+                      SizedBox(height: 8),
+                      Text('右下の + から追加してください'),
+                    ],
                   ),
-                ),
+                );
+              }
+              return ListView.separated(
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final c = list[index];
+                  final color = c.colorArgb == null
+                      ? null
+                      : Color(c.colorArgb!);
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: color,
+                      child: const Icon(Icons.person),
+                    ),
+                    title: Text(c.name),
+                    trailing: PopupMenuButton<dynamic>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _onCharacterMenu(
+                            scaffoldCtx,
+                            ref,
+                            _CharMenuAction.edit,
+                            c,
+                          );
+                        } else if (value == 'delete') {
+                          _onCharacterMenu(
+                            scaffoldCtx,
+                            ref,
+                            _CharMenuAction.delete,
+                            c,
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(value: 'edit', child: Text('名称変更')),
+                        PopupMenuItem(value: 'delete', child: Text('削除')),
+                      ],
+                    ),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            RegisterPage(gameId: gameId, characterId: c.id),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _addCharacter(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('キャラ追加'),
+      floatingActionButton: Builder(
+        builder: (scaffoldCtx) => FloatingActionButton.extended(
+          onPressed: () => _addCharacter(scaffoldCtx, ref),
+          icon: const Icon(Icons.add),
+          label: const Text('キャラ追加'),
+        ),
       ),
     );
   }
@@ -151,6 +169,7 @@ class CharacterSelectPage extends ConsumerWidget {
     _CharMenuAction a,
     CharacterRow c,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     final db = await ref.read(appDatabaseProvider.future);
     if (!context.mounted) return;
     switch (a) {
@@ -182,13 +201,13 @@ class CharacterSelectPage extends ConsumerWidget {
         );
         if (name != null && name != c.name) {
           await db.renameCharacter(id: c.id, name: name);
-          // 再取得
-          ref.invalidate(fetchCharactersByGameProvider(gameId));
-          if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('更新しました')));
-          }
+          // 先に既存の Snackbar を消してから表示
+          messenger.hideCurrentSnackBar();
+          messenger.showSnackBar(const SnackBar(content: Text('更新しました')));
+          // 次フレームで再取得して UI 更新
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.invalidate(fetchCharactersByGameProvider(gameId));
+          });
         }
         break;
       case _CharMenuAction.delete:
@@ -211,12 +230,13 @@ class CharacterSelectPage extends ConsumerWidget {
         );
         if (ok == true) {
           await db.deleteCharacterAndRecords(gameId: gameId, characterId: c.id);
-          ref.invalidate(fetchCharactersByGameProvider(gameId));
-          if (context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('削除しました')));
-          }
+          // 先に既存の Snackbar を消してから表示
+          messenger.hideCurrentSnackBar();
+          messenger.showSnackBar(const SnackBar(content: Text('削除しました')));
+          // 次フレームで再取得して UI 更新
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.invalidate(fetchCharactersByGameProvider(gameId));
+          });
         }
         break;
     }
