@@ -157,6 +157,28 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<void> renameCharacter({
+    required String id,
+    required String name,
+  }) async {
+    await (update(characters)..where((t) => t.id.equals(id))).write(
+      CharactersCompanion(name: Value(name)),
+    );
+  }
+
+  Future<void> deleteCharacterAndRecords({
+    required String gameId,
+    required String characterId,
+  }) async {
+    await transaction(() async {
+      await (delete(dailyCharacterRecords)..where(
+            (t) => t.gameId.equals(gameId) & t.characterId.equals(characterId),
+          ))
+          .go();
+      await (delete(characters)..where((t) => t.id.equals(characterId))).go();
+    });
+  }
+
   // Range query for monthly aggregations
   Future<List<DailyCharacterRecordRow>> fetchByRange({
     required DateTime start,
