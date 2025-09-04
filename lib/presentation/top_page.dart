@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/presentation/x_axis_labels.dart';
-import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:table_calendar/table_calendar.dart';
+
 import 'game_select_page.dart';
 import 'settings_page.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 class TopPage extends ConsumerStatefulWidget {
   const TopPage({super.key});
@@ -15,10 +16,17 @@ class TopPage extends ConsumerStatefulWidget {
   ConsumerState<TopPage> createState() => _TopPageState();
 }
 
-class _Point {
-  final int x;
-  final double y;
-  const _Point(this.x, this.y);
+class _PlottedPoint {
+  final int day; // 1..31
+  final double pct; // 0..100
+  final GameMonthlySeries series; // owning series
+  final DailyWinRatePoint source; // original aggregated point
+  const _PlottedPoint({
+    required this.day,
+    required this.pct,
+    required this.series,
+    required this.source,
+  });
 }
 
 class _TopPageState extends ConsumerState<TopPage> {
@@ -196,13 +204,18 @@ class _ChartWithLegend extends StatelessWidget {
             ),
             series: [
               for (var i = 0; i < series.length; i++)
-                LineSeries<_Point, num>(
+                LineSeries<_PlottedPoint, num>(
                   dataSource: [
                     for (final p in series[i].points)
-                      _Point(p.day.day, (p.winRate * 100)),
+                      _PlottedPoint(
+                        day: p.day.day,
+                        pct: p.winRate * 100,
+                        series: series[i],
+                        source: p,
+                      ),
                   ],
-                  xValueMapper: (pt, _) => pt.x,
-                  yValueMapper: (pt, _) => pt.y,
+                  xValueMapper: (pt, _) => pt.day,
+                  yValueMapper: (pt, _) => pt.pct,
                   color: palette[i],
                   width: 2,
                   markerSettings: const MarkerSettings(
@@ -213,7 +226,61 @@ class _ChartWithLegend extends StatelessWidget {
                   name: series[i].gameName,
                 ),
             ],
-            tooltipBehavior: TooltipBehavior(enable: true),
+            tooltipBehavior: TooltipBehavior(
+              enable: true,
+              builder:
+                  (
+                    dynamic data,
+                    dynamic point,
+                    dynamic seriesWidget,
+                    int pointIndex,
+                    int seriesIndex,
+                  ) {
+                    final pp = data as _PlottedPoint;
+                    final d = pp.source.day;
+                    String fmtPct(double v) => v.toStringAsFixed(1);
+                    final rows = <Widget>[];
+                    // Header: Game name and date
+                    rows.add(
+                      Text(
+                        '${pp.series.gameName}  ${d.month}/${d.day}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                    rows.add(const SizedBox(height: 4));
+                    // Combined
+                    rows.add(
+                      Text(
+                        '合算: ${pp.source.wins}-${pp.source.losses} (${fmtPct(pp.source.winRate * 100)}%)',
+                      ),
+                    );
+                    // Per character (only ones with records)
+                    final entries = pp.source.byCharacter.entries.toList()
+                      ..sort(
+                        (a, b) => (b.value.total).compareTo(a.value.total),
+                      );
+                    for (final e in entries) {
+                      final cw = e.value.wins;
+                      final cl = e.value.losses;
+                      final rate = e.value.rate * 100;
+                      rows.add(Text('${e.key}: $cw-$cl (${fmtPct(rate)}%)'));
+                    }
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: rows,
+                      ),
+                    );
+                  },
+            ),
           ),
         ),
         const SizedBox(height: 8),

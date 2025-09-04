@@ -2,10 +2,27 @@ import 'package:collection/collection.dart';
 import 'package:matchnotes/infrastructure/db/app_database.dart';
 import 'package:matchnotes/domain/repositories.dart';
 
+class CharWinLoss {
+  final int wins;
+  final int losses;
+  const CharWinLoss({required this.wins, required this.losses});
+  int get total => wins + losses;
+  double get rate => total == 0 ? 0 : wins / total;
+}
+
 class DailyWinRatePoint {
   final DateTime day;
-  final double winRate; // 0.0..1.0
-  const DailyWinRatePoint(this.day, this.winRate);
+  final double winRate; // 0.0..1.0 (combined)
+  final int wins; // combined
+  final int losses; // combined
+  final Map<String, CharWinLoss> byCharacter; // characterId -> stats
+  const DailyWinRatePoint({
+    required this.day,
+    required this.winRate,
+    required this.wins,
+    required this.losses,
+    required this.byCharacter,
+  });
 }
 
 class GameMonthlySeries {
@@ -52,14 +69,27 @@ class GetMonthlyWinRatesPerGameUsecase {
           return; // omit days without matches
         }
         final rate = wins / total;
+        // per character aggregation
+        final byChar = <String, CharWinLoss>{};
+        final groupedChar = groupBy(list, (r) => r.id.characterId);
+        groupedChar.forEach((chId, recs) {
+          final cw = recs.fold<int>(0, (a, b) => a + b.wins);
+          final cl = recs.fold<int>(0, (a, b) => a + b.losses);
+          if (cw + cl > 0) {
+            byChar[chId] = CharWinLoss(wins: cw, losses: cl);
+          }
+        });
         points.add(
           DailyWinRatePoint(
-            DateTime(
+            day: DateTime(
               yyyymmdd ~/ 10000,
               (yyyymmdd % 10000) ~/ 100,
               yyyymmdd % 100,
             ),
-            rate,
+            winRate: rate,
+            wins: wins,
+            losses: losses,
+            byCharacter: byChar,
           ),
         );
       });
