@@ -4,7 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'package:matchnotes/presentation/game_management_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -37,17 +36,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             title: const Text('勝敗登録ページで画面ロック防止'),
             value: _keepScreenOn,
             onChanged: (v) => setState(() => _keepScreenOn = v),
-          ),
-          const Divider(height: 0),
-          ListTile(
-            leading: const Icon(Icons.tune),
-            title: const Text('ゲーム管理'),
-            subtitle: const Text('一覧 / 追加 / 名称変更 / 削除'),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const GameManagementPage()),
-              );
-            },
           ),
           const Divider(height: 0),
           ListTile(
