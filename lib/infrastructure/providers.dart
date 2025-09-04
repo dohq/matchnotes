@@ -70,6 +70,13 @@ final watchAllGamesProvider = StreamProvider<List<GameRow>>((ref) async* {
   yield* db.watchAllGames();
 });
 
+// Characters provider
+final fetchCharactersByGameProvider =
+    FutureProvider.family<List<CharacterRow>, String>((ref, gameId) async {
+      final db = await ref.watch(appDatabaseProvider.future);
+      return db.fetchCharactersByGame(gameId);
+    });
+
 final exportDailyRecordsCsvUsecaseProvider =
     FutureProvider<ExportDailyRecordsCsvUsecase>((ref) async {
       final repo = await ref.watch(
