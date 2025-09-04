@@ -125,11 +125,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final gameAsync = ref.watch(fetchGameByIdProvider(gameId));
+    final charAsync = ref.watch(fetchCharacterByIdProvider(charId));
+    final gameName = gameAsync.asData?.value?.name ?? gameId;
+    final charName = charAsync.asData?.value?.name ?? charId;
     final df = DateFormat('yyyy-MM-dd');
     final wr = (_wins + _losses) == 0 ? null : _wins / (_wins + _losses);
     final wrText = wr == null ? 'n/a' : wr.toStringAsFixed(2);
     return Scaffold(
-      appBar: AppBar(title: Text('登録: $gameId/$charId')),
+      appBar: AppBar(title: Text('登録: $gameName/$charName')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

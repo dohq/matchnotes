@@ -70,12 +70,35 @@ final watchAllGamesProvider = StreamProvider<List<GameRow>>((ref) async* {
   yield* db.watchAllGames();
 });
 
+// Single game fetch by id (for titles, etc.)
+final fetchGameByIdProvider = FutureProvider.family<GameRow?, String>((
+  ref,
+  id,
+) async {
+  final db = await ref.watch(appDatabaseProvider.future);
+  final q = db.select(db.games)
+    ..where((t) => t.id.equals(id))
+    ..limit(1);
+  return q.getSingleOrNull();
+});
+
 // Characters provider
 final fetchCharactersByGameProvider =
     FutureProvider.family<List<CharacterRow>, String>((ref, gameId) async {
       final db = await ref.watch(appDatabaseProvider.future);
       return db.fetchCharactersByGame(gameId);
     });
+
+// Single character fetch by id (for titles, etc.)
+final fetchCharacterByIdProvider = FutureProvider.family<CharacterRow?, String>(
+  (ref, id) async {
+    final db = await ref.watch(appDatabaseProvider.future);
+    final q = db.select(db.characters)
+      ..where((t) => t.id.equals(id))
+      ..limit(1);
+    return q.getSingleOrNull();
+  },
+);
 
 final exportDailyRecordsCsvUsecaseProvider =
     FutureProvider<ExportDailyRecordsCsvUsecase>((ref) async {

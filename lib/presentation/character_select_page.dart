@@ -12,9 +12,11 @@ class CharacterSelectPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final gameAsync = ref.watch(fetchGameByIdProvider(gameId));
+    final gameName = gameAsync.asData?.value?.name;
     final asyncChars = ref.watch(fetchCharactersByGameProvider(gameId));
     return Scaffold(
-      appBar: AppBar(title: Text('キャラ選択 ($gameId)')),
+      appBar: AppBar(title: Text('キャラ選択 (${gameName ?? gameId})')),
       body: Builder(
         builder: (scaffoldCtx) {
           return asyncChars.when(
