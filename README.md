@@ -1,4 +1,4 @@
-# matchnotes
+# MatchNotes
 
  Android向け・ローカルSQLiteベースの「勝敗記録アプリ」。
 

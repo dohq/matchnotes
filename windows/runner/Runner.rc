@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "dev.dohq" "\0"
-            VALUE "FileDescription", "matchnotes" "\0"
+            VALUE "FileDescription", "MatchNotes" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "matchnotes" "\0"
+            VALUE "InternalName", "MatchNotes" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 dev.dohq. All rights reserved." "\0"
-            VALUE "OriginalFilename", "matchnotes.exe" "\0"
-            VALUE "ProductName", "matchnotes" "\0"
+            VALUE "OriginalFilename", "MatchNotes.exe" "\0"
+            VALUE "ProductName", "MatchNotes" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -17,7 +17,7 @@ void main() {
     await tester.pump();
 
     // App bar title
-    expect(find.text('Matchnotes'), findsOneWidget);
+    expect(find.text('MatchNotes'), findsOneWidget);
 
     // Keep smoke test minimal
   });

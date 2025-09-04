@@ -16,7 +16,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(themeModeProvider);
     return MaterialApp(
-      title: 'Matchnotes',
+      title: 'MatchNotes',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -86,7 +86,7 @@ class _DemoPageState extends ConsumerState<DemoPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Matchnotes Demo'),
+        title: const Text('MatchNotes Demo'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

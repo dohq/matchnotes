@@ -37,7 +37,7 @@ class _TopPageState extends ConsumerState<TopPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Matchnotes'),
+        title: const Text('MatchNotes'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
