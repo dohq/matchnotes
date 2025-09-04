@@ -24,8 +24,8 @@ void main() {
         ),
       );
 
-      // Empty state
-      await tester.pump();
+      // Empty state (wait until async settles)
+      await tester.pumpAndSettle();
       expect(find.text('キャラが未登録です'), findsOneWidget);
       expect(find.text('右下の + から追加してください'), findsOneWidget);
 

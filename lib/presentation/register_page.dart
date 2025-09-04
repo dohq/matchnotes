@@ -127,8 +127,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Widget build(BuildContext context) {
     final gameAsync = ref.watch(fetchGameByIdProvider(gameId));
     final charAsync = ref.watch(fetchCharacterByIdProvider(charId));
-    final gameName = gameAsync.asData?.value?.name ?? gameId;
-    final charName = charAsync.asData?.value?.name ?? charId;
+    // どちらかが読み込み中ならローディング
+    if (gameAsync.isLoading || charAsync.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
+    // どちらかがエラーなら表示
+    if (gameAsync.hasError || charAsync.hasError) {
+      final ge = gameAsync.error;
+      final ce = charAsync.error;
+      return Scaffold(body: Center(child: Text('読み込みエラー: ${ge ?? ce}')));
+    }
+    final game = gameAsync.asData?.value;
+    final character = charAsync.asData?.value;
+    if (game == null || character == null) {
+      return const Scaffold(body: Center(child: Text('データが見つかりません')));
+    }
+    final gameName = game.name;
+    final charName = character.name;
     final df = DateFormat('yyyy-MM-dd');
     final wr = (_wins + _losses) == 0 ? null : _wins / (_wins + _losses);
     final wrText = wr == null ? 'n/a' : wr.toStringAsFixed(2);
