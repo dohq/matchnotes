@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../infrastructure/providers.dart';
+
 import '../infrastructure/db/app_database.dart';
+import '../infrastructure/providers.dart';
 import 'character_select_page.dart';
 
 class GameSelectPage extends ConsumerWidget {
@@ -28,7 +29,6 @@ class GameSelectPage extends ConsumerWidget {
               return ListTile(
                 leading: const Icon(Icons.sports_esports),
                 title: Text(g.name),
-                subtitle: Text(g.id),
                 trailing: PopupMenuButton<_GameMenuAction>(
                   onSelected: (a) => _onGameMenu(context, ref, a, g),
                   itemBuilder: (context) => const [
