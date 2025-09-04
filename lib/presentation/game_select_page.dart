@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../infrastructure/providers.dart';
+import '../infrastructure/db/app_database.dart';
 import 'character_select_page.dart';
 import 'game_management_page.dart';
 
@@ -29,7 +30,19 @@ class GameSelectPage extends ConsumerWidget {
                 leading: const Icon(Icons.sports_esports),
                 title: Text(g.name),
                 subtitle: Text(g.id),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: PopupMenuButton<_GameMenuAction>(
+                  onSelected: (a) => _onGameMenu(context, ref, a, g),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: _GameMenuAction.edit,
+                      child: Text('名称変更'),
+                    ),
+                    PopupMenuItem(
+                      value: _GameMenuAction.delete,
+                      child: Text('削除'),
+                    ),
+                  ],
+                ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => CharacterSelectPage(gameId: g.id),
@@ -51,4 +64,78 @@ class GameSelectPage extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _onGameMenu(
+    BuildContext context,
+    WidgetRef ref,
+    _GameMenuAction a,
+    GameRow g,
+  ) async {
+    final db = await ref.read(appDatabaseProvider.future);
+    if (!context.mounted) return;
+    switch (a) {
+      case _GameMenuAction.edit:
+        final controller = TextEditingController(text: g.name);
+        final name = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('ゲーム名を変更'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: '表示名'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final v = controller.text.trim();
+                  if (v.isEmpty) return;
+                  Navigator.pop(context, v);
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
+        );
+        if (name != null && name != g.name) {
+          await db.renameGame(id: g.id, name: name);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('更新しました')));
+        }
+        break;
+      case _GameMenuAction.delete:
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('削除しますか？'),
+            content: Text('ゲーム「${g.name}」と関連する記録が全て削除されます。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('削除'),
+              ),
+            ],
+          ),
+        );
+        if (ok == true) {
+          await db.deleteGameAndRecords(g.id);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('削除しました')));
+        }
+        break;
+    }
+  }
 }
+
+enum _GameMenuAction { edit, delete }

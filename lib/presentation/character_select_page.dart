@@ -44,7 +44,19 @@ class CharacterSelectPage extends ConsumerWidget {
                 ),
                 title: Text(c.name),
                 subtitle: Text(c.id),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: PopupMenuButton<_CharMenuAction>(
+                  onSelected: (a) => _onCharacterMenu(context, ref, a, c),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: _CharMenuAction.edit,
+                      child: Text('名称変更'),
+                    ),
+                    PopupMenuItem(
+                      value: _CharMenuAction.delete,
+                      child: Text('削除'),
+                    ),
+                  ],
+                ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) =>
@@ -132,4 +144,83 @@ class CharacterSelectPage extends ConsumerWidget {
     final b = (color.b * 255.0).round() & 0xff;
     return (a << 24) | (r << 16) | (g << 8) | b; // ARGB int
   }
+
+  Future<void> _onCharacterMenu(
+    BuildContext context,
+    WidgetRef ref,
+    _CharMenuAction a,
+    CharacterRow c,
+  ) async {
+    final db = await ref.read(appDatabaseProvider.future);
+    if (!context.mounted) return;
+    switch (a) {
+      case _CharMenuAction.edit:
+        final controller = TextEditingController(text: c.name);
+        final name = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('キャラ名を変更'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: '表示名'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final v = controller.text.trim();
+                  if (v.isEmpty) return;
+                  Navigator.pop(context, v);
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
+        );
+        if (name != null && name != c.name) {
+          await db.renameCharacter(id: c.id, name: name);
+          // 再取得
+          ref.invalidate(fetchCharactersByGameProvider(gameId));
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('更新しました')));
+          }
+        }
+        break;
+      case _CharMenuAction.delete:
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('削除しますか？'),
+            content: Text('キャラ「${c.name}」の記録も全て削除されます。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('削除'),
+              ),
+            ],
+          ),
+        );
+        if (ok == true) {
+          await db.deleteCharacterAndRecords(gameId: gameId, characterId: c.id);
+          ref.invalidate(fetchCharactersByGameProvider(gameId));
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('削除しました')));
+          }
+        }
+        break;
+    }
+  }
 }
+
+enum _CharMenuAction { edit, delete }
