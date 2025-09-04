@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'character_select_page.dart';
+import 'game_management_page.dart';
 
 class GameSelectPage extends StatelessWidget {
   const GameSelectPage({super.key});
@@ -26,9 +27,9 @@ class GameSelectPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          ScaffoldMessenger.of(
+          Navigator.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('未実装です')));
+          ).push(MaterialPageRoute(builder: (_) => const GameManagementPage()));
         },
         icon: const Icon(Icons.add),
         label: const Text('ゲーム追加'),
