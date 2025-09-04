@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../infrastructure/providers.dart';
+
 import '../infrastructure/db/app_database.dart';
+import '../infrastructure/providers.dart';
 import 'register_page.dart';
 
 class CharacterSelectPage extends ConsumerWidget {
@@ -43,7 +44,6 @@ class CharacterSelectPage extends ConsumerWidget {
                   child: const Icon(Icons.person),
                 ),
                 title: Text(c.name),
-                subtitle: Text(c.id),
                 trailing: PopupMenuButton<_CharMenuAction>(
                   onSelected: (a) => _onCharacterMenu(context, ref, a, c),
                   itemBuilder: (context) => const [
