@@ -215,4 +215,16 @@ class AppDatabase extends _$AppDatabase {
       ..where((t) => t.yyyymmdd.isBetweenValues(s, e));
     return q.get();
   }
+
+  // Stream version for reactive UI updates
+  Stream<List<DailyCharacterRecordRow>> watchByRange({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final s = toYyyymmdd(start);
+    final e = toYyyymmdd(end);
+    final q = select(dailyCharacterRecords)
+      ..where((t) => t.yyyymmdd.isBetweenValues(s, e));
+    return q.watch();
+  }
 }

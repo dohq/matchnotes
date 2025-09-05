@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/presentation/x_axis_labels.dart';
+import 'package:matchnotes/infrastructure/db/app_database.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import 'game_select_page.dart';
@@ -279,116 +280,128 @@ class _SevenDayTrendCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder(
-      future: _loadData(ref),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return _skeleton(context);
-        final points = snapshot.data!;
-        if (points.isEmpty) return _emptyBox(context, 'データがありません');
-        return Container(
-          height: 160,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SfCartesianChart(
-            plotAreaBorderWidth: 0,
-            primaryXAxis: DateTimeAxis(
-              intervalType: DateTimeIntervalType.days,
-              dateFormat: null,
-              majorGridLines: const MajorGridLines(width: 0),
-            ),
-            primaryYAxis: NumericAxis(
-              minimum: 0,
-              maximum: 100,
-              interval: 25,
-              axisLabelFormatter: (args) => ChartAxisLabel(
-                '${args.value.toInt()}%',
-                Theme.of(context).textTheme.bodySmall!,
+    final dbAsync = ref.watch(appDatabaseProvider);
+    return dbAsync.when(
+      loading: () => _skeleton(context),
+      error: (e, st) => _sevenErrorBox(context, e),
+      data: (db) {
+        final today = DateTime.now();
+        final start = DateTime(
+          today.year,
+          today.month,
+          today.day,
+        ).subtract(const Duration(days: 6));
+        final end = DateTime(today.year, today.month, today.day);
+        return StreamBuilder(
+          stream: db.watchByRange(start: start, end: end),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return _skeleton(context);
+            final rows = snapshot.data!;
+            final points = _aggregateSevenDays(rows, start);
+            if (points.isEmpty) return _emptyBox(context, 'データがありません');
+            return Container(
+              height: 160,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            tooltipBehavior: TooltipBehavior(
-              enable: true,
-              builder:
-                  (
-                    dynamic data,
-                    dynamic point,
-                    dynamic seriesWidget,
-                    int pointIndex,
-                    int seriesIndex,
-                  ) {
-                    final sp = data as _SevenPoint;
-                    String fmtPct(double v) => v.toStringAsFixed(1);
-                    final rows = <Widget>[];
-                    // Header: date
-                    rows.add(
-                      Text(
-                        '${sp.day.month}/${sp.day.day}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                    rows.add(const SizedBox(height: 4));
-                    final win = sp.wins;
-                    final loss = sp.losses;
-                    final total = win + loss;
-                    final pct = sp.pct;
-                    rows.add(
-                      Text(
-                        '合算: Total:$total  Win:$win  Loss:$loss (${fmtPct(pct)}%)',
-                      ),
-                    );
-                    return Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: rows,
-                      ),
-                    );
-                  },
-            ),
-            series: [
-              LineSeries<_SevenPoint, DateTime>(
-                dataSource: points,
-                xValueMapper: (p, _) => p.day,
-                yValueMapper: (p, _) => p.pct,
-                color: Colors.blue,
-                width: 2,
-                markerSettings: const MarkerSettings(
-                  isVisible: true,
-                  width: 3,
-                  height: 3,
+              child: SfCartesianChart(
+                plotAreaBorderWidth: 0,
+                primaryXAxis: DateTimeAxis(
+                  intervalType: DateTimeIntervalType.days,
+                  dateFormat: null,
+                  majorGridLines: const MajorGridLines(width: 0),
                 ),
-                name: 'Win% (7d)',
+                primaryYAxis: NumericAxis(
+                  minimum: 0,
+                  maximum: 100,
+                  interval: 25,
+                  axisLabelFormatter: (args) => ChartAxisLabel(
+                    '${args.value.toInt()}%',
+                    Theme.of(context).textTheme.bodySmall!,
+                  ),
+                ),
+                tooltipBehavior: TooltipBehavior(
+                  enable: true,
+                  builder:
+                      (
+                        dynamic data,
+                        dynamic point,
+                        dynamic seriesWidget,
+                        int pointIndex,
+                        int seriesIndex,
+                      ) {
+                        final sp = data as _SevenPoint;
+                        String fmtPct(double v) => v.toStringAsFixed(1);
+                        final rows = <Widget>[];
+                        // Header: date
+                        rows.add(
+                          Text(
+                            '${sp.day.month}/${sp.day.day}',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        );
+                        rows.add(const SizedBox(height: 4));
+                        final win = sp.wins;
+                        final loss = sp.losses;
+                        final total = win + loss;
+                        final pct = sp.pct;
+                        rows.add(
+                          Text(
+                            '合算: Total:$total  Win:$win  Loss:$loss (${fmtPct(pct)}%)',
+                          ),
+                        );
+                        return Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: rows,
+                          ),
+                        );
+                      },
+                ),
+                series: [
+                  LineSeries<_SevenPoint, DateTime>(
+                    dataSource: points,
+                    xValueMapper: (p, _) => p.day,
+                    yValueMapper: (p, _) => p.pct,
+                    color: Colors.blue,
+                    width: 2,
+                    markerSettings: const MarkerSettings(
+                      isVisible: true,
+                      width: 3,
+                      height: 3,
+                    ),
+                    name: 'Win% (7d)',
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  Future<List<_SevenPoint>> _loadData(WidgetRef ref) async {
-    final repo = await ref.read(dailyCharacterRecordRepositoryProvider.future);
-    final today = DateTime.now();
-    final start = DateTime(
-      today.year,
-      today.month,
-      today.day,
-    ).subtract(const Duration(days: 6));
-    final end = DateTime(today.year, today.month, today.day);
-    final rows = await repo.findByRange(start: start, end: end);
+  List<_SevenPoint> _aggregateSevenDays(
+    List<DailyCharacterRecordRow> rows,
+    DateTime start,
+  ) {
     // 集計（全ゲーム合算、日単位）
     final map = <int, _SevenPoint>{};
     for (final r in rows) {
-      final d = DateTime(r.id.date.year, r.id.date.month, r.id.date.day);
+      final ymd = r.yyyymmdd;
+      final y = ymd ~/ 10000;
+      final m = (ymd % 10000) ~/ 100;
+      final d0 = ymd % 100;
+      final d = DateTime(y, m, d0);
       final key = d.millisecondsSinceEpoch;
       final cur = map[key];
       final w = (cur?.wins ?? 0) + r.wins;
@@ -410,6 +423,15 @@ class _SevenDayTrendCard extends ConsumerWidget {
         .map((e) => _SevenPoint(day: e.day, wins: e.wins, losses: e.losses))
         .toList();
   }
+
+  Widget _sevenErrorBox(BuildContext context, Object e) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text('読み込みエラー: $e'),
+  );
 
   Widget _skeleton(BuildContext context) => Container(
     height: 160,
