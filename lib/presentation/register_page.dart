@@ -364,7 +364,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -384,36 +383,38 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ],
             ),
             const SizedBox(height: 24),
-
-            // メモ表示エリア（存在する場合は本文、無い場合は薄いプレースホルダ）
+            // メモ表示エリア（長文時はスクロール、残りの空き高さをすべて使用）
             Builder(
               builder: (context) {
                 final theme = Theme.of(context);
                 final cs = theme.colorScheme;
                 final textTheme = theme.textTheme;
                 final hasMemo = (_memo != null && _memo!.trim().isNotEmpty);
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
-                    style: hasMemo
-                        ? textTheme.bodyMedium
-                        : textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                          ),
+                return Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
+                        style: hasMemo
+                            ? textTheme.bodyMedium
+                            : textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.7),
+                              ),
+                      ),
+                    ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 16),
-            // 中央余白（片手で押しやすくするため下側にボタンを寄せる）
-            const Spacer(),
+            // 中央余白は Expanded に吸収されるため Spacer は不要
 
             // Undo / メモ をカウントボタンの上に配置
             Row(
@@ -433,7 +434,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   child: OutlinedButton.icon(
                     onPressed: _busy ? null : onMemoTap,
                     icon: const Icon(Icons.edit_note),
-                    label: const Text('メモ'),
+                    label: const Text('メモの編集'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
