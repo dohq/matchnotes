@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../domain/date_utils.dart';
 
 import '../domain/entities.dart' as domain;
 import '../infrastructure/providers.dart';
@@ -33,7 +34,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   String get gameId => widget.gameId;
   String get charId => widget.characterId;
-  DateTime get day => DateTime(_date.year, _date.month, _date.day);
+  DateTime get day {
+    final cutoff = ref.read(cutoffHourProvider);
+    return truncateWithCutoff(_date, cutoff);
+  }
 
   @override
   void initState() {

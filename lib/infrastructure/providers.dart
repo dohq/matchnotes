@@ -121,6 +121,7 @@ final importDailyRecordsCsvUsecaseProvider =
 // Persistent Settings Keys
 const _kPrefThemeMode = 'settings.themeMode'; // system|light|dark
 const _kPrefKeepScreenOn = 'settings.keepScreenOn'; // bool
+const _kPrefCutoffHour = 'settings.cutoffHour'; // int 0-23
 
 String _themeModeToString(ThemeMode m) {
   switch (m) {
@@ -192,3 +193,29 @@ final keepScreenOnProvider =
     StateNotifierProvider<KeepScreenOnController, bool>((ref) {
       return KeepScreenOnController();
     });
+
+// Cutoff hour controller (0-23). Default 0.
+class CutoffHourController extends StateNotifier<int> {
+  CutoffHourController() : super(0) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final v = prefs.getInt(_kPrefCutoffHour);
+    if (v != null && v >= 0 && v <= 23 && v != state) state = v;
+  }
+
+  Future<void> setHour(int h) async {
+    final clamped = h.clamp(0, 23);
+    state = clamped;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kPrefCutoffHour, clamped);
+  }
+}
+
+final cutoffHourProvider = StateNotifierProvider<CutoffHourController, int>((
+  ref,
+) {
+  return CutoffHourController();
+});

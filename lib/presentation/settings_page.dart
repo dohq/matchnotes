@@ -58,6 +58,41 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             onChanged: (v) => keepCtl.setKeepOn(v),
           ),
           const Divider(height: 0),
+          // 日付切替時刻（カットオフ）
+          Builder(
+            builder: (context) {
+              final cutoff = ref.watch(cutoffHourProvider);
+              final cutoffCtl = ref.read(cutoffHourProvider.notifier);
+              return ListTile(
+                leading: const Icon(Icons.schedule),
+                title: const Text('日付の切り替え時刻'),
+                subtitle: const Text('指定時刻までは前日扱い（例: 4時なら 04:00 までが前日）'),
+                trailing: DropdownButton<int>(
+                  value: cutoff,
+                  items: List.generate(
+                    24,
+                    (i) => DropdownMenuItem(
+                      value: i,
+                      child: Text('${i.toString().padLeft(2, '0')}:00'),
+                    ),
+                  ),
+                  onChanged: (v) {
+                    if (v == null) return;
+                    cutoffCtl.setHour(v);
+                    // 変更通知は各画面側で listen 済み
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '切り替え時刻を ${v.toString().padLeft(2, '0')}:00 に設定しました',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          const Divider(height: 0),
           ListTile(
             leading: const Icon(Icons.file_upload),
             title: const Text('データのインポート'),

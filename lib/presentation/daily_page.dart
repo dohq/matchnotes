@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
+import 'package:matchnotes/domain/date_utils.dart';
 import 'package:matchnotes/domain/entities.dart' as domain;
 
 class DailyPage extends ConsumerStatefulWidget {
@@ -28,7 +29,10 @@ class _DailyPageState extends ConsumerState<DailyPage> {
 
   String get gameId => _gameIdCtl.text.trim();
   String get charId => _charIdCtl.text.trim();
-  DateTime get day => DateTime(_date.year, _date.month, _date.day);
+  DateTime get day {
+    final cutoff = ref.read(cutoffHourProvider);
+    return truncateWithCutoff(_date, cutoff);
+  }
 
   @override
   void initState() {
