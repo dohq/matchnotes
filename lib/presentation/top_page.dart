@@ -31,12 +31,20 @@ class _PlottedPoint {
 class _TopPageState extends ConsumerState<TopPage> {
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
 
+  bool get _isNextDisabled {
+    final now = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    return _month.year == now.year && _month.month == now.month;
+  }
+
   void _prevMonth() {
     setState(() => _month = DateTime(_month.year, _month.month - 1, 1));
   }
 
   void _nextMonth() {
-    setState(() => _month = DateTime(_month.year, _month.month + 1, 1));
+    final now = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    final candidate = DateTime(_month.year, _month.month + 1, 1);
+    if (candidate.isAfter(now)) return; // 当月以降には進まない
+    setState(() => _month = candidate);
   }
 
   @override
@@ -85,7 +93,7 @@ class _TopPageState extends ConsumerState<TopPage> {
                       '${_month.year}/${_month.month.toString().padLeft(2, '0')}',
                     ),
                     IconButton(
-                      onPressed: _nextMonth,
+                      onPressed: _isNextDisabled ? null : _nextMonth,
                       icon: const Icon(Icons.chevron_right),
                       tooltip: '翌月',
                     ),
@@ -180,9 +188,7 @@ class _TodaySummaryCard extends ConsumerWidget {
                   return ExpansionTile(
                     title: Text(row.gameName),
                     subtitle: Text(
-                      '合計 $total / 勝 ${{}} / 負 ${{}} / ${rate.toStringAsFixed(1)}%'
-                          .replaceFirst('{{}}', row.wins.toString())
-                          .replaceFirst('{{}}', row.losses.toString()),
+                      '合計 $total / 勝 ${row.wins} / 負 ${row.losses} / ${rate.toStringAsFixed(1)}%',
                     ),
                     children: [
                       if (row.byCharacter.isEmpty)

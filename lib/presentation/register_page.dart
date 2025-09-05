@@ -43,16 +43,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       // ignore: discarded_futures
       WakelockPlus.disable();
     }
-    // 変更監視
-    ref.listen<bool>(keepScreenOnProvider, (prev, next) {
-      if (next) {
-        // ignore: discarded_futures
-        WakelockPlus.enable();
-      } else {
-        // ignore: discarded_futures
-        WakelockPlus.disable();
-      }
-    });
     _refresh();
   }
 
@@ -83,6 +73,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     try {
       final addWin = await ref.read(addWinUsecaseProvider.future);
       await addWin.execute(gameId: gameId, characterId: charId, date: day);
+      // TopPage のサマリ/トレンド再読込のために invalidate
+      ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
+      ref.invalidate(dailyCharacterRecordRepositoryProvider);
       _undo.add(() async {
         final repo = await ref.read(
           dailyCharacterRecordRepositoryProvider.future,
@@ -110,6 +103,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     try {
       final addLoss = await ref.read(addLossUsecaseProvider.future);
       await addLoss.execute(gameId: gameId, characterId: charId, date: day);
+      // TopPage のサマリ/トレンド再読込のために invalidate
+      ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
+      ref.invalidate(dailyCharacterRecordRepositoryProvider);
       _undo.add(() async {
         final repo = await ref.read(
           dailyCharacterRecordRepositoryProvider.future,
@@ -138,6 +134,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final op = _undo.removeLast();
     try {
       await op();
+      // 取り消し後も最新にする
+      ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
+      ref.invalidate(dailyCharacterRecordRepositoryProvider);
       await _refresh();
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -154,6 +153,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 設定の変更を監視（build 内で listen する必要がある）
+    ref.listen<bool>(keepScreenOnProvider, (prev, next) {
+      if (next) {
+        // ignore: discarded_futures
+        WakelockPlus.enable();
+      } else {
+        // ignore: discarded_futures
+        WakelockPlus.disable();
+      }
+    });
     final gameAsync = ref.watch(fetchGameByIdProvider(gameId));
     final charAsync = ref.watch(fetchCharacterByIdProvider(charId));
     // どちらかが読み込み中ならローディング
