@@ -307,20 +307,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             // ゲーム名/キャラ名（中央・横幅の約2/3に合わせて拡大縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: FractionallySizedBox(
-                widthFactor: 0.66,
-                alignment: Alignment.center,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
+              child: Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.66,
                   alignment: Alignment.center,
-                  child: Text(
-                    '$gameName / $charName',
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: 120, // FittedBoxで縮小
-                      fontWeight: FontWeight.w800,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$gameName / $charName',
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 120, // FittedBoxで縮小
+                        fontWeight: FontWeight.w800,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
@@ -336,7 +338,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 0),
             // 勝率（横幅いっぱいに近いサイズで自動縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
