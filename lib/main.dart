@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:media_store_plus/media_store_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/domain/entities.dart' as domain;
 import 'package:matchnotes/presentation/top_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Android の MediaStore を利用するための初期化（1回のみ）
+  await MediaStore.ensureInitialized();
+  // MediaStore 側でアプリ既定のフォルダ名を設定（Downloads 直下でも要求される場合がある）
+  MediaStore.appFolder = 'MatchNotes';
   runApp(const ProviderScope(child: MyApp()));
 }
 
