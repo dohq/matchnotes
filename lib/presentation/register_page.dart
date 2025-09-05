@@ -154,6 +154,51 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    ButtonStyle winButtonStyle(BuildContext context) {
+      final cs = Theme.of(context).colorScheme;
+      return FilledButton.styleFrom(
+        backgroundColor: cs.primaryContainer,
+        foregroundColor: cs.onPrimaryContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+      );
+    }
+
+    ButtonStyle lossButtonStyle(BuildContext context) {
+      final cs = Theme.of(context).colorScheme;
+      return FilledButton.styleFrom(
+        backgroundColor: cs.errorContainer,
+        foregroundColor: cs.onErrorContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+      );
+    }
+
+    Widget statTile({required String label, required String value}) {
+      final textTheme = Theme.of(context).textTheme;
+      final cs = Theme.of(context).colorScheme;
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // 設定の変更を監視（build 内で listen する必要がある）
     ref.listen<bool>(keepScreenOnProvider, (prev, next) {
       if (next) {
@@ -187,7 +232,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final charName = character.name;
     final df = DateFormat('yyyy-MM-dd');
     final wr = (_wins + _losses) == 0 ? null : _wins / (_wins + _losses);
-    final wrText = wr == null ? 'n/a' : '${(wr * 100).toStringAsFixed(1)}%';
+    final wrPercent = wr == null ? null : (wr * 100);
+    final wrText = wrPercent == null
+        ? 'n/a'
+        : '${wrPercent.toStringAsFixed(1)}%';
 
     void showSnack(String msg) {
       ScaffoldMessenger.of(context)
@@ -270,46 +318,46 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ヘッダ情報
-            Text('今日の勝率', style: Theme.of(context).textTheme.titleMedium),
+            // ヘッダ情報（上：日付 中央、中央：巨大勝率、下：合計/勝/負の3分割）
+            Center(
+              child: Text(
+                df.format(day),
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            ),
             const SizedBox(height: 8),
+            Center(
+              child: Text(
+                wrText,
+                style:
+                    Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ) ??
+                    const TextStyle(fontSize: 40, fontWeight: FontWeight.w800),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
-                Chip(label: Text(wrText, style: const TextStyle(fontSize: 16))),
-                const SizedBox(width: 12),
-                Chip(
-                  label: Text(
-                    '合計 ${_wins + _losses}',
-                    style: const TextStyle(fontSize: 16),
+                Expanded(
+                  child: statTile(
+                    label: '合計',
+                    value: (_wins + _losses).toString(),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Chip(
-                  label: const Text('勝'),
-                  backgroundColor: Colors.green.withValues(alpha: 0.15),
-                  side: const BorderSide(color: Colors.green),
+                Expanded(
+                  child: statTile(label: '勝', value: _wins.toString()),
                 ),
-                const SizedBox(width: 4),
-                Text('$_wins', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(width: 8),
-                Chip(
-                  label: const Text('負'),
-                  backgroundColor: Colors.red.withValues(alpha: 0.15),
-                  side: const BorderSide(color: Colors.red),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$_losses',
-                  style: Theme.of(context).textTheme.titleMedium,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: statTile(label: '負', value: _losses.toString()),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              '日付: ${df.format(day)}',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // 中央余白（片手で押しやすくするため下側にボタンを寄せる）
             const Spacer(),
@@ -322,14 +370,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   Expanded(
                     child: FilledButton(
                       onPressed: _busy ? null : onWinTap,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.green.withValues(alpha: 0.20),
-                        foregroundColor: Colors.green.shade900,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                      ),
+                      style: winButtonStyle(context),
                       child: const Text(
                         '勝 +1',
                         style: TextStyle(
@@ -343,14 +384,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   Expanded(
                     child: FilledButton(
                       onPressed: _busy ? null : onLossTap,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.red.withValues(alpha: 0.20),
-                        foregroundColor: Colors.red.shade900,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                      ),
+                      style: lossButtonStyle(context),
                       child: const Text(
                         '負 +1',
                         style: TextStyle(
