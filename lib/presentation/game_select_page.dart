@@ -110,6 +110,8 @@ class GameSelectPage extends ConsumerWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('更新しました')));
+          // invalidate monthly charts
+          ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
         }
         break;
       case _GameMenuAction.delete:
@@ -136,6 +138,8 @@ class GameSelectPage extends ConsumerWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('削除しました')));
+          // invalidate monthly charts
+          ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
         }
         break;
     }
