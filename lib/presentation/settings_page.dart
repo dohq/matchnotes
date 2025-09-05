@@ -18,19 +18,37 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final mode = ref.watch(themeModeProvider);
-    final isDark = mode == ThemeMode.dark;
+    void setMode(ThemeMode m) => ref.read(themeModeProvider.notifier).state = m;
     return Scaffold(
       appBar: AppBar(title: const Text('設定')),
       body: ListView(
         children: [
-          SwitchListTile(
-            title: const Text('ダークモード'),
-            value: isDark,
-            onChanged: (v) {
-              ref.read(themeModeProvider.notifier).state = v
-                  ? ThemeMode.dark
-                  : ThemeMode.light;
-            },
+          const ListTile(title: Text('テーマモード')),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('システムに合わせる'),
+                  icon: Icon(Icons.settings_suggest_outlined),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('ライト（OFF）'),
+                  icon: Icon(Icons.light_mode_outlined),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('ダーク（ON）'),
+                  icon: Icon(Icons.dark_mode_outlined),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (set) {
+                if (set.isNotEmpty) setMode(set.first);
+              },
+            ),
           ),
           SwitchListTile(
             title: const Text('勝敗登録ページで画面ロック防止'),
