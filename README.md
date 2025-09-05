@@ -119,7 +119,7 @@ make test
 
 - 共有の公開 `Downloads` フォルダ直下に CSV を出力します。
   - Desktop（Windows/macOS/Linux）: 各OSの Downloads ディレクトリ
-  - Android: 公開ストレージの `Download` ディレクトリ直下（`external_path` 使用）
+  - Android: 公開ストレージの `Download` ディレクトリ直下（MediaStore 経由 / `media_store_plus` 使用。Android 10+ 対応）
 
 ## アプリ設定
 

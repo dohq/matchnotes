@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:external_path/external_path.dart';
+import 'package:media_store_plus/media_store_plus.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -161,11 +161,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
                     String outPath;
                     if (Platform.isAndroid) {
-                      final downloadsPath =
-                          await ExternalPath.getExternalStoragePublicDirectory(
-                            ExternalPath.DIRECTORY_DOWNLOADS,
-                          );
-                      outPath = '$downloadsPath/$fileName';
+                      final msp = MediaStore();
+                      // MediaStore 経由で Downloads コレクションに保存（Android10+対応）
+                      final info = await msp.saveFile(
+                        tempFilePath: tmpFile.path,
+                        dirType: DirType.download,
+                        dirName: DirName.download,
+                        relativePath: FilePath.root,
+                      );
+                      if (info == null || !info.isSuccessful) {
+                        throw 'MediaStore への保存に失敗しました';
+                      }
+                      outPath = info.uri.toString();
                     } else {
                       final downloadsDir = await getDownloadsDirectory();
                       if (downloadsDir == null) {
@@ -174,8 +181,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       outPath = '${downloadsDir.path}/$fileName';
                     }
 
-                    final outFile = File(outPath);
-                    await outFile.writeAsBytes(bytes, flush: true);
+                    if (!Platform.isAndroid) {
+                      final outFile = File(outPath);
+                      await outFile.writeAsBytes(bytes, flush: true);
+                    }
 
                     // 一時ファイルは削除（失敗は無視）
                     try {
