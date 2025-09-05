@@ -383,7 +383,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ],
             ),
             const SizedBox(height: 24),
-            // メモ表示エリア（長文時はスクロール、残りの空き高さをすべて使用）
+            // メモ表示エリア（長文時はスクロール。残りの空き高さをすべて使用）
             Builder(
               builder: (context) {
                 final theme = Theme.of(context);
@@ -414,7 +414,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               },
             ),
             const SizedBox(height: 16),
-            // 中央余白は Expanded に吸収されるため Spacer は不要
+            // ここから下は通常のフロー（ページ全体がスクロール対象）
 
             // Undo / メモ をカウントボタンの上に配置
             Row(
