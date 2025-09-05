@@ -308,6 +308,52 @@ class _SevenDayTrendCard extends ConsumerWidget {
                 Theme.of(context).textTheme.bodySmall!,
               ),
             ),
+            tooltipBehavior: TooltipBehavior(
+              enable: true,
+              builder:
+                  (
+                    dynamic data,
+                    dynamic point,
+                    dynamic seriesWidget,
+                    int pointIndex,
+                    int seriesIndex,
+                  ) {
+                    final sp = data as _SevenPoint;
+                    String fmtPct(double v) => v.toStringAsFixed(1);
+                    final rows = <Widget>[];
+                    // Header: date
+                    rows.add(
+                      Text(
+                        '${sp.day.month}/${sp.day.day}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                    rows.add(const SizedBox(height: 4));
+                    final win = sp.wins;
+                    final loss = sp.losses;
+                    final total = win + loss;
+                    final pct = sp.pct;
+                    rows.add(
+                      Text(
+                        '合算: Total:$total  Win:$win  Loss:$loss (${fmtPct(pct)}%)',
+                      ),
+                    );
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: rows,
+                      ),
+                    );
+                  },
+            ),
             series: [
               LineSeries<_SevenPoint, DateTime>(
                 dataSource: points,
