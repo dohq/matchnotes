@@ -49,15 +49,18 @@ class CharacterSelectPage extends ConsumerWidget {
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final c = list[index];
-                      final color = c.colorArgb == null
-                          ? null
-                          : Color(c.colorArgb!);
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: color,
-                          child: const Icon(Icons.person),
+                        minVerticalPadding: 14,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
                         ),
-                        title: Text(c.name),
+                        title: Text(
+                          c.name,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(fontSize: 18),
+                        ),
                         trailing: PopupMenuButton<dynamic>(
                           onSelected: (value) {
                             if (value == 'edit') {

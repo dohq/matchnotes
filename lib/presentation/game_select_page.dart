@@ -27,8 +27,17 @@ class GameSelectPage extends ConsumerWidget {
             itemBuilder: (context, index) {
               final g = games[index];
               return ListTile(
-                leading: const Icon(Icons.sports_esports),
-                title: Text(g.name),
+                minVerticalPadding: 14,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                title: Text(
+                  g.name,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontSize: 18),
+                ),
                 trailing: PopupMenuButton<_GameMenuAction>(
                   onSelected: (a) => _onGameMenu(context, ref, a, g),
                   itemBuilder: (context) => const [
