@@ -147,70 +147,79 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             title: const Text('データのエクスポート'),
             onTap: () async {
               final messenger = ScaffoldMessenger.of(context);
-              final usecaseAsync = ref.read(
-                exportDailyRecordsCsvUsecaseProvider,
-              );
-              await usecaseAsync.when(
-                data: (usecase) async {
-                  try {
-                    // 一旦一時ディレクトリへ出力してから保存先へ移す
-                    final tempDir = await getTemporaryDirectory();
-                    final tmpFile = await usecase.execute(targetDir: tempDir);
-                    final bytes = await tmpFile.readAsBytes();
-                    final fileName = tmpFile.uri.pathSegments.last;
+              try {
+                // Usecase を Future 経由で取得（初回でも確実に実行）
+                final usecase = await ref.read(
+                  exportDailyRecordsCsvUsecaseProvider.future,
+                );
 
-                    String outPath;
-                    if (Platform.isAndroid) {
-                      final msp = MediaStore();
-                      // MediaStore 経由で Downloads コレクションに保存（Android10+対応）
-                      final info = await msp.saveFile(
-                        tempFilePath: tmpFile.path,
-                        dirType: DirType.download,
-                        dirName: DirName.download,
-                        relativePath: FilePath.root,
-                      );
-                      if (info == null || !info.isSuccessful) {
-                        throw 'MediaStore への保存に失敗しました';
-                      }
-                      outPath = info.uri.toString();
-                    } else {
-                      final downloadsDir = await getDownloadsDirectory();
-                      if (downloadsDir == null) {
-                        throw 'Downloads ディレクトリが取得できませんでした';
-                      }
-                      outPath = '${downloadsDir.path}/$fileName';
-                    }
+                // 一旦一時ディレクトリへ出力してから保存先へ移す
+                final tempDir = await getTemporaryDirectory();
+                final tmpFile = await usecase.execute(targetDir: tempDir);
+                final bytes = await tmpFile.readAsBytes();
+                // 期待ファイル名（固定）
+                const desiredFileName = 'matchnotes_backup.csv';
+                // MediaStore.saveFile は tempFile のファイル名を元に保存されるため、
+                // 一時ファイルを目的の名前にリネームしてから渡す。
+                final renamedTmp = File('${tempDir.path}/$desiredFileName');
+                if (renamedTmp.path != tmpFile.path) {
+                  await tmpFile.rename(renamedTmp.path);
+                }
 
-                    if (!Platform.isAndroid) {
-                      final outFile = File(outPath);
-                      await outFile.writeAsBytes(bytes, flush: true);
-                    }
-
-                    // 一時ファイルは削除（失敗は無視）
-                    try {
-                      await tmpFile.delete();
-                    } catch (_) {}
-
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('エクスポート完了: $outPath')),
-                    );
-                  } catch (e) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('エクスポート失敗: $e')),
-                    );
+                String outLabel; // Snackbar 表示用
+                if (Platform.isAndroid) {
+                  final msp = MediaStore();
+                  // MediaStore 経由で Downloads コレクションに保存（Android10+対応）
+                  final info = await msp.saveFile(
+                    tempFilePath: renamedTmp.path,
+                    dirType: DirType.download,
+                    dirName: DirName.download,
+                    // Downloads/MatchNotes/ 配下に保存
+                    relativePath: 'MatchNotes',
+                  );
+                  if (info == null || !info.isSuccessful) {
+                    throw 'MediaStore への保存に失敗しました';
                   }
-                },
-                loading: () {
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('準備中です…')),
-                  );
-                },
-                error: (e, st) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('エクスポート不可: $e')),
-                  );
-                },
-              );
+                  // 実際に保存されたファイル名を表示（重複時の自動リネームも反映）
+                  outLabel = 'Downloads/${info.name}';
+                } else if (Platform.isIOS) {
+                  // iOS: アプリ専用 Documents/MatchNotes に保存
+                  final docsDir = await getApplicationDocumentsDirectory();
+                  final outDir = Directory('${docsDir.path}/MatchNotes');
+                  if (!await outDir.exists()) {
+                    await outDir.create(recursive: true);
+                  }
+                  final outPath = '${outDir.path}/$desiredFileName';
+                  final outFile = File(outPath);
+                  await outFile.writeAsBytes(bytes, flush: true);
+                  outLabel = outPath;
+                } else {
+                  // Desktop: Downloads/MatchNotes に保存
+                  final downloadsDir = await getDownloadsDirectory();
+                  if (downloadsDir == null) {
+                    throw 'Downloads ディレクトリが取得できませんでした';
+                  }
+                  final outDir = Directory('${downloadsDir.path}/MatchNotes');
+                  if (!await outDir.exists()) {
+                    await outDir.create(recursive: true);
+                  }
+                  final outPath = '${outDir.path}/$desiredFileName';
+                  final outFile = File(outPath);
+                  await outFile.writeAsBytes(bytes, flush: true);
+                  outLabel = outPath;
+                }
+
+                // 一時ファイルは削除（失敗は無視）
+                try {
+                  await renamedTmp.delete();
+                } catch (_) {}
+
+                messenger.showSnackBar(
+                  SnackBar(content: Text('エクスポート完了: $outLabel')),
+                );
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(content: Text('エクスポート失敗: $e')));
+              }
             },
           ),
         ],
