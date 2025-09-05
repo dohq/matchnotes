@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 import '../domain/entities.dart' as domain;
 import '../infrastructure/providers.dart';
 import 'memo_page.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   final String gameId;
@@ -327,20 +328,40 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ) ??
-                    const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                    const TextStyle(fontSize: 34, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 6),
-            // ゲーム名/キャラ名（中央）
-            Center(
-              child: Text(
-                '$gameName / $charName',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
+            // ゲーム名/キャラ名（中央・横幅に合わせて拡大縮小）
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  '$gameName / $charName',
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 120, // FittedBoxで縮小
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
             const SizedBox(height: 12),
+            // 勝率ラベル
+            Center(
+              child: Text(
+                '勝率',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 6),
             // 勝率（横幅いっぱいに近いサイズで自動縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
