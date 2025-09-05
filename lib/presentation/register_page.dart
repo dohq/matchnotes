@@ -270,7 +270,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('登録: $gameName/$charName')),
+      appBar: AppBar(title: const Text('登録')),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
@@ -319,23 +319,42 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ヘッダ情報（上：日付 中央、中央：巨大勝率、下：合計/勝/負の3分割）
+            // 日付（中央・大きめ）
             Center(
               child: Text(
                 df.format(day),
+                style:
+                    Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ) ??
+                    const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 6),
+            // ゲーム名/キャラ名（中央）
+            Center(
+              child: Text(
+                '$gameName / $charName',
                 style: Theme.of(context).textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                wrText,
-                style:
-                    Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ) ??
-                    const TextStyle(fontSize: 40, fontWeight: FontWeight.w800),
-                textAlign: TextAlign.center,
+            const SizedBox(height: 12),
+            // 勝率（横幅いっぱいに近いサイズで自動縮小）
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  wrText,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 200, // FittedBoxで縮小される想定
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
