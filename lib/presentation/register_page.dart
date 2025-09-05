@@ -270,50 +270,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       showSnack('Undoしました');
     }
 
+    Future<void> onMemoTap() async {
+      if (_busy) return;
+      HapticFeedback.selectionClick();
+      await Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  MemoPage(gameId: gameId, characterId: charId, date: day),
+            ),
+          )
+          .then((_) => _refresh());
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('登録')),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _busy ? null : onUndoTap,
-                  icon: const Icon(Icons.undo),
-                  label: const Text('Undo'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () => Navigator.of(context)
-                            .push(
-                              MaterialPageRoute(
-                                builder: (_) => MemoPage(
-                                  gameId: gameId,
-                                  characterId: charId,
-                                  date: day,
-                                ),
-                              ),
-                            )
-                            .then((_) => _refresh()),
-                  icon: const Icon(Icons.note),
-                  label: const Text('メモ'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
@@ -333,20 +304,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
             ),
             const SizedBox(height: 6),
-            // ゲーム名/キャラ名（中央・横幅に合わせて拡大縮小）
+            // ゲーム名/キャラ名（中央・横幅の約2/3に合わせて拡大縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+              child: FractionallySizedBox(
+                widthFactor: 0.66,
                 alignment: Alignment.center,
-                child: Text(
-                  '$gameName / $charName',
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 120, // FittedBoxで縮小
-                    fontWeight: FontWeight.w800,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$gameName / $charName',
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 120, // FittedBoxで縮小
+                      fontWeight: FontWeight.w800,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -361,20 +336,39 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 2),
             // 勝率（横幅いっぱいに近いサイズで自動縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.center,
-                child: Text(
-                  wrText,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 200, // FittedBoxで縮小される想定
-                    fontWeight: FontWeight.w900,
-                  ),
+                child: Builder(
+                  builder: (context) {
+                    final hasPercent = wrText.trim().endsWith('%');
+                    final numberPart = hasPercent
+                        ? wrText.trim().substring(0, wrText.trim().length - 1)
+                        : wrText.trim();
+                    return RichText(
+                      text: TextSpan(
+                        style: DefaultTextStyle.of(context).style.copyWith(
+                          fontSize: 200,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        children: [
+                          TextSpan(text: numberPart),
+                          if (hasPercent)
+                            const TextSpan(
+                              text: '%',
+                              style: TextStyle(
+                                fontSize: 140, // 数字よりやや小さく
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -401,6 +395,34 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
             // 中央余白（片手で押しやすくするため下側にボタンを寄せる）
             const Spacer(),
+
+            // Undo / メモ をカウントボタンの上に配置
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : onUndoTap,
+                    icon: const Icon(Icons.undo),
+                    label: const Text('Undo'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : onMemoTap,
+                    icon: const Icon(Icons.edit_note),
+                    label: const Text('メモ'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
 
             // 大ボタン2分割
             SizedBox(
