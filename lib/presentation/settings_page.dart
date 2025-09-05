@@ -76,67 +76,107 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   return;
                 }
                 final path = result.files.single.path!;
-                final usecaseAsync = ref.read(
-                  importDailyRecordsCsvUsecaseProvider,
-                );
-                await usecaseAsync.when(
-                  data: (usecase) async {
-                    try {
-                      final file = File(path);
-                      final report = await usecase.executeWithReport(
-                        file: file,
-                      );
-                      // 上位5件のみ表示、残りは件数で示す
-                      final maxShow = 5;
-                      final shownErrors = report.errors.take(maxShow).toList();
-                      final remaining =
-                          report.errors.length - shownErrors.length;
-                      // 表示用本文
-                      final sb = StringBuffer()
-                        ..writeln('インポート: ${report.imported} 件')
-                        ..writeln('スキップ: ${report.skipped} 件');
-                      if (report.errors.isNotEmpty) {
-                        sb.writeln('\nエラー詳細（一部）:');
-                        for (final e in shownErrors) {
-                          sb.writeln('- $e');
-                        }
-                        if (remaining > 0) {
-                          sb.writeln('… ほか $remaining 件');
-                        }
-                      }
-                      if (!context.mounted) return;
-                      await showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('インポート結果'),
-                          content: SingleChildScrollView(
-                            child: Text(sb.toString()),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('閉じる'),
-                            ),
-                          ],
+                // 上書き確認ダイアログ
+                if (!context.mounted) return;
+                final proceed =
+                    await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('インポートの確認'),
+                        content: const Text(
+                          'CSV に含まれる日付・ゲーム・キャラクターの組み合わせは、\n'
+                          '既存データがある場合に勝敗数で上書きされます。\n\n'
+                          'インポートを実行しますか？',
                         ),
-                      );
-                    } catch (e) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('インポート失敗: $e')),
-                      );
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('キャンセル'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text('インポートする'),
+                          ),
+                        ],
+                      ),
+                    ) ??
+                    false;
+                if (!proceed) return;
+
+                try {
+                  // 初回でも確実に usecase を取得
+                  final usecase = await ref.read(
+                    importDailyRecordsCsvUsecaseProvider.future,
+                  );
+
+                  // 進行ダイアログ
+                  if (!context.mounted) return;
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const AlertDialog(
+                      content: Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 12),
+                          Text('インポート中…'),
+                        ],
+                      ),
+                    ),
+                  );
+
+                  final file = File(path);
+                  final report = await usecase.executeWithReport(file: file);
+
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop(); // 進行ダイアログを閉じる
+
+                  // キャッシュ無効化（画面が依存する可能性のあるプロバイダ）
+                  ref.invalidate(dailyCharacterRecordRepositoryProvider);
+                  ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
+
+                  // 結果ダイアログ
+                  final maxShow = 5;
+                  final shownErrors = report.errors.take(maxShow).toList();
+                  final remaining = report.errors.length - shownErrors.length;
+                  final sb = StringBuffer()
+                    ..writeln('インポート: ${report.imported} 件')
+                    ..writeln('スキップ: ${report.skipped} 件');
+                  if (report.errors.isNotEmpty) {
+                    sb.writeln('\nエラー詳細（一部）:');
+                    for (final e in shownErrors) {
+                      sb.writeln('- $e');
                     }
-                  },
-                  loading: () {
-                    messenger.showSnackBar(
-                      const SnackBar(content: Text('準備中です…')),
-                    );
-                  },
-                  error: (e, st) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text('インポート不可: $e')),
-                    );
-                  },
-                );
+                    if (remaining > 0) sb.writeln('… ほか $remaining 件');
+                  }
+                  await showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('インポート結果'),
+                      content: SingleChildScrollView(
+                        child: Text(sb.toString()),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('閉じる'),
+                        ),
+                      ],
+                    ),
+                  );
+                } catch (e) {
+                  // 進行ダイアログが出ていれば閉じる
+                  if (context.mounted && Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('インポート失敗: $e')),
+                  );
+                }
               } catch (e) {
                 messenger.showSnackBar(SnackBar(content: Text('インポート失敗: $e')));
               }
