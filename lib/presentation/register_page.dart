@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../domain/date_utils.dart';
 
 import '../domain/entities.dart' as domain;
 import '../infrastructure/providers.dart';
@@ -33,7 +34,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   String get gameId => widget.gameId;
   String get charId => widget.characterId;
-  DateTime get day => DateTime(_date.year, _date.month, _date.day);
+  DateTime get day {
+    final cutoffMin = ref.read(cutoffMinutesProvider);
+    return truncateWithCutoffMinutes(_date, cutoffMin);
+  }
 
   @override
   void initState() {
@@ -48,7 +52,30 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       // ignore: discarded_futures
       WakelockPlus.disable();
     }
+    // 前回画面の値が一瞬見えないよう、初回は明示的にクリアしてから取得
+    setState(() {
+      _wins = 0;
+      _losses = 0;
+      _memo = null;
+      _undo.clear();
+    });
     _refresh();
+  }
+
+  @override
+  void didUpdateWidget(covariant RegisterPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gameId != widget.gameId ||
+        oldWidget.characterId != widget.characterId) {
+      // 別ゲーム/キャラに切り替わった場合は一旦値をクリアし最新を取得
+      setState(() {
+        _wins = 0;
+        _losses = 0;
+        _memo = null;
+        _undo.clear();
+      });
+      _refresh();
+    }
   }
 
   Future<void> _refresh() async {

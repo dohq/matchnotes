@@ -1,10 +1,11 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:media_store_plus/media_store_plus.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
+import 'package:media_store_plus/media_store_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -56,6 +57,54 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             title: const Text('勝敗登録ページで画面ロック防止'),
             value: keepOn,
             onChanged: (v) => keepCtl.setKeepOn(v),
+          ),
+          const Divider(height: 0),
+          // 日付切替時刻（カットオフ）
+          Builder(
+            builder: (context) {
+              final cutoffMin = ref.watch(cutoffMinutesProvider);
+              final cutoffCtl = ref.read(cutoffMinutesProvider.notifier);
+              final hh = (cutoffMin ~/ 60).toString().padLeft(2, '0');
+              final mm = (cutoffMin % 60).toString().padLeft(2, '0');
+              final label = '$hh:$mm';
+              return ListTile(
+                leading: const Icon(Icons.schedule),
+                title: const Text('日付の切り替わり時刻'),
+                subtitle: Text('現在: $label  / 指定時刻までは前日扱い'),
+                onTap: () async {
+                  if (!context.mounted) return;
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay(
+                      hour: cutoffMin ~/ 60,
+                      minute: cutoffMin % 60,
+                    ),
+                    helpText: '日付の切り替え時刻',
+                    builder: (ctx, child) {
+                      final mq = MediaQuery.of(ctx);
+                      return MediaQuery(
+                        data: mq.copyWith(alwaysUse24HourFormat: true),
+                        child: child ?? const SizedBox.shrink(),
+                      );
+                    },
+                  );
+                  if (picked == null) return;
+                  await cutoffCtl.setHourMinute(
+                    hour: picked.hour,
+                    minute: picked.minute,
+                  );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '切り替え時刻を ${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')} に設定しました',
+                      ),
+                    ),
+                  );
+                },
+                trailing: const Icon(Icons.chevron_right),
+              );
+            },
           ),
           const Divider(height: 0),
           ListTile(
