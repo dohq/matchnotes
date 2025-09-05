@@ -152,7 +152,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               await usecaseAsync.when(
                 data: (usecase) async {
                   try {
-                    final dir = await getApplicationDocumentsDirectory();
+                    Future<Directory> resolveExportDir() async {
+                      // 1) Desktop (Windows/macOS/Linux): Downloads が取得できる
+                      final downloads = await getDownloadsDirectory();
+                      if (downloads != null) return downloads;
+                      // 2) Android: Downloads タイプの外部ストレージ（アプリ領域）
+                      try {
+                        final dirs = await getExternalStorageDirectories(
+                          type: StorageDirectory.downloads,
+                        );
+                        final candidates =
+                            dirs?.where((d) => d.path.isNotEmpty) ?? const [];
+                        if (candidates.isNotEmpty) return candidates.first;
+                      } catch (_) {}
+                      // 3) フォールバック: ドキュメント
+                      return getApplicationDocumentsDirectory();
+                    }
+
+                    final dir = await resolveExportDir();
                     final file = await usecase.execute(targetDir: dir);
                     messenger.showSnackBar(
                       SnackBar(content: Text('エクスポート完了: ${file.path}')),
