@@ -295,13 +295,14 @@ class _SevenDayTrendCard extends ConsumerWidget {
       loading: () => _skeleton(context),
       error: (e, st) => _sevenErrorBox(context, e),
       data: (db) {
-        final today = DateTime.now();
-        final start = DateTime(
-          today.year,
-          today.month,
-          today.day,
-        ).subtract(const Duration(days: 6));
-        final end = DateTime(today.year, today.month, today.day);
+        // 切替時刻を考慮した「論理上の今日」を終端にする
+        final cutoffMin = ref.watch(cutoffMinutesProvider);
+        final logicalToday = truncateWithCutoffMinutes(
+          DateTime.now(),
+          cutoffMin,
+        );
+        final start = logicalToday.subtract(const Duration(days: 6));
+        final end = logicalToday;
         return StreamBuilder(
           stream: db.watchByRange(start: start, end: end),
           builder: (context, snapshot) {
