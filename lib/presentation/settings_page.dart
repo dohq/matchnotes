@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:external_path/external_path.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -152,27 +153,37 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               await usecaseAsync.when(
                 data: (usecase) async {
                   try {
-                    Future<Directory> resolveExportDir() async {
-                      // 1) Desktop (Windows/macOS/Linux): Downloads が取得できる
-                      final downloads = await getDownloadsDirectory();
-                      if (downloads != null) return downloads;
-                      // 2) Android: Downloads タイプの外部ストレージ（アプリ領域）
-                      try {
-                        final dirs = await getExternalStorageDirectories(
-                          type: StorageDirectory.downloads,
-                        );
-                        final candidates =
-                            dirs?.where((d) => d.path.isNotEmpty) ?? const [];
-                        if (candidates.isNotEmpty) return candidates.first;
-                      } catch (_) {}
-                      // 3) フォールバック: ドキュメント
-                      return getApplicationDocumentsDirectory();
+                    // 一旦一時ディレクトリへ出力してから保存先へ移す
+                    final tempDir = await getTemporaryDirectory();
+                    final tmpFile = await usecase.execute(targetDir: tempDir);
+                    final bytes = await tmpFile.readAsBytes();
+                    final fileName = tmpFile.uri.pathSegments.last;
+
+                    String outPath;
+                    if (Platform.isAndroid) {
+                      final downloadsPath =
+                          await ExternalPath.getExternalStoragePublicDirectory(
+                            ExternalPath.DIRECTORY_DOWNLOADS,
+                          );
+                      outPath = '$downloadsPath/$fileName';
+                    } else {
+                      final downloadsDir = await getDownloadsDirectory();
+                      if (downloadsDir == null) {
+                        throw 'Downloads ディレクトリが取得できませんでした';
+                      }
+                      outPath = '${downloadsDir.path}/$fileName';
                     }
 
-                    final dir = await resolveExportDir();
-                    final file = await usecase.execute(targetDir: dir);
+                    final outFile = File(outPath);
+                    await outFile.writeAsBytes(bytes, flush: true);
+
+                    // 一時ファイルは削除（失敗は無視）
+                    try {
+                      await tmpFile.delete();
+                    } catch (_) {}
+
                     messenger.showSnackBar(
-                      SnackBar(content: Text('エクスポート完了: ${file.path}')),
+                      SnackBar(content: Text('エクスポート完了: $outPath')),
                     );
                   } catch (e) {
                     messenger.showSnackBar(

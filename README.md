@@ -117,10 +117,9 @@ make test
 
 ### CSVエクスポート（アプリ設定 > データのエクスポート）
 
-- 可能な場合は `Downloads` フォルダ配下に CSV を出力します。
-  - Desktop（Windows/macOS/Linux）: `Downloads` を使用
-  - Android: 外部ストレージの `Downloads` ディレクトリ（アプリ領域）を使用
-  - 上記が取得できない場合はフォールバックとしてアプリのドキュメントディレクトリに出力します。
+- 共有の公開 `Downloads` フォルダ直下に CSV を出力します。
+  - Desktop（Windows/macOS/Linux）: 各OSの Downloads ディレクトリ
+  - Android: 公開ストレージの `Download` ディレクトリ直下（`external_path` 使用）
 
 ## アプリ設定
 
