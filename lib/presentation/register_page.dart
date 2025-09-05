@@ -225,7 +225,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       appBar: AppBar(title: Text('登録: $gameName/$charName')),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
           child: Row(
             children: [
               Expanded(
@@ -234,7 +234,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   icon: const Icon(Icons.undo),
                   label: const Text('Undo'),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                   ),
                 ),
               ),
@@ -257,7 +257,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   icon: const Icon(Icons.note),
                   label: const Text('メモ'),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                   ),
                 ),
               ),
@@ -266,54 +266,77 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ヘッダ情報
             Text('今日の勝率', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Row(
               children: [
-                Chip(label: Text(wrText)),
-                const SizedBox(width: 12),
-                Chip(label: Text('合計 ${_wins + _losses}')),
+                Chip(label: Text(wrText, style: const TextStyle(fontSize: 16))),
                 const SizedBox(width: 12),
                 Chip(
-                  label: Text('勝 $_wins'),
+                  label: Text(
+                    '合計 ${_wins + _losses}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Chip(
+                  label: const Text('勝'),
                   backgroundColor: Colors.green.withValues(alpha: 0.15),
                   side: const BorderSide(color: Colors.green),
                 ),
+                const SizedBox(width: 4),
+                Text('$_wins', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(width: 8),
                 Chip(
-                  label: Text('負 $_losses'),
+                  label: const Text('負'),
                   backgroundColor: Colors.red.withValues(alpha: 0.15),
                   side: const BorderSide(color: Colors.red),
                 ),
+                const SizedBox(width: 4),
+                Text(
+                  '$_losses',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               '日付: ${df.format(day)}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // 中央余白（片手で押しやすくするため下側にボタンを寄せる）
             const Spacer(),
 
             // 大ボタン2分割
             SizedBox(
-              height: 96,
+              height: 120,
               child: Row(
                 children: [
                   Expanded(
                     child: FilledButton(
                       onPressed: _busy ? null : onWinTap,
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: Colors.green.withValues(alpha: 0.20),
+                        foregroundColor: Colors.green.shade900,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
                       ),
-                      child: const Text('勝 +1', style: TextStyle(fontSize: 18)),
+                      child: const Text(
+                        '勝 +1',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -321,9 +344,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     child: FilledButton(
                       onPressed: _busy ? null : onLossTap,
                       style: FilledButton.styleFrom(
-                        backgroundColor: Colors.red,
+                        backgroundColor: Colors.red.withValues(alpha: 0.20),
+                        foregroundColor: Colors.red.shade900,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
                       ),
-                      child: const Text('負 +1', style: TextStyle(fontSize: 18)),
+                      child: const Text(
+                        '負 +1',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],
