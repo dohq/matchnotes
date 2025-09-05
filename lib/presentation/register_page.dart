@@ -266,11 +266,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final gameName = game.name;
     final charName = character.name;
     final df = DateFormat('yyyy-MM-dd');
-    final wr = (_wins + _losses) == 0 ? null : _wins / (_wins + _losses);
-    final wrPercent = wr == null ? null : (wr * 100);
-    final wrText = wrPercent == null
-        ? 'n/a'
-        : '${wrPercent.toStringAsFixed(1)}%';
+    final total = _wins + _losses;
+    final wrPercent = total == 0 ? 0.0 : (_wins / total) * 100;
+    final wrText = '${wrPercent.toStringAsFixed(1)}%';
 
     Future<void> onWinTap() async {
       if (_busy) return;

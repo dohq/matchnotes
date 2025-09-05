@@ -408,20 +408,13 @@ class _SevenDayTrendCard extends ConsumerWidget {
       final l = (cur?.losses ?? 0) + r.losses;
       map[key] = _SevenPoint(day: d, wins: w, losses: l);
     }
-    // 欠損日を0%で補完（視覚的な連続性のため）
-    for (var i = 0; i < 7; i++) {
-      final d = DateTime(
-        start.year,
-        start.month,
-        start.day,
-      ).add(Duration(days: i));
-      final key = d.millisecondsSinceEpoch;
-      map.putIfAbsent(key, () => _SevenPoint(day: d, wins: 0, losses: 0));
-    }
     final sorted = map.values.toList()..sort((a, b) => a.day.compareTo(b.day));
-    return sorted
-        .map((e) => _SevenPoint(day: e.day, wins: e.wins, losses: e.losses))
-        .toList();
+    // 試合がない日はプロットしない
+    return [
+      for (final e in sorted)
+        if (e.wins + e.losses > 0)
+          _SevenPoint(day: e.day, wins: e.wins, losses: e.losses),
+    ];
   }
 
   Widget _sevenErrorBox(BuildContext context, Object e) => Container(
