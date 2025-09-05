@@ -119,6 +119,24 @@ make test
 
 - アプリのドキュメントディレクトリ配下にCSVを出力します。
 
+## アプリ設定
+
+設定は `設定` 画面から変更できます。変更内容はアプリ再起動後も保持されます（`shared_preferences` に保存）。
+
+- テーマモード
+  - 選択肢: `システムに合わせる` / `ライト（OFF）` / `ダーク（ON）`
+  - UI: `SegmentedButton<ThemeMode>`
+  - プロバイダ: `themeModeProvider`（`StateNotifierProvider`）
+  - 保存キー: `settings.themeMode`（`system|light|dark`）
+
+- 勝敗登録ページで画面ロック防止（常時点灯）
+  - スイッチONで、勝敗登録ページ表示中のスリープを防止します。
+  - 変更はページ表示中でも即時反映されます（`ref.listen` で監視）。
+  - ページ離脱時は自動的に解除されます。
+  - 実装: `wakelock_plus` を使用（`WakelockPlus.enable/disable`）
+  - プロバイダ: `keepScreenOnProvider`（`StateNotifierProvider`）
+  - 保存キー: `settings.keepScreenOn`（`bool`）
+
 ## ゲーム/キャラクター管理
 
 - ゲーム管理は `ゲーム選択` 画面で行います。

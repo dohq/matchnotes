@@ -13,12 +13,13 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  bool _keepScreenOn = false;
-
   @override
   Widget build(BuildContext context) {
     final mode = ref.watch(themeModeProvider);
-    void setMode(ThemeMode m) => ref.read(themeModeProvider.notifier).state = m;
+    final themeCtl = ref.read(themeModeProvider.notifier);
+    void setMode(ThemeMode m) => themeCtl.setMode(m);
+    final keepOn = ref.watch(keepScreenOnProvider);
+    final keepCtl = ref.read(keepScreenOnProvider.notifier);
     return Scaffold(
       appBar: AppBar(title: const Text('設定')),
       body: ListView(
@@ -52,8 +53,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           SwitchListTile(
             title: const Text('勝敗登録ページで画面ロック防止'),
-            value: _keepScreenOn,
-            onChanged: (v) => setState(() => _keepScreenOn = v),
+            value: keepOn,
+            onChanged: (v) => keepCtl.setKeepOn(v),
           ),
           const Divider(height: 0),
           ListTile(

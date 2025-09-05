@@ -47,6 +47,8 @@ dependencies:
   syncfusion_flutter_charts: ^30.2.7
   csv: ^5.0.2
   file_picker: ^8.0.3
+  wakelock_plus: ^1.2.5
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

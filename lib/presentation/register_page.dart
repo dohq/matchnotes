@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/entities.dart' as domain;
 import '../infrastructure/providers.dart';
 import 'memo_page.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   final String gameId;
@@ -32,6 +33,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   void initState() {
     super.initState();
+    // keepScreenOnProvider の値に応じて画面ロック防止を切り替える
+    // 初期値反映
+    final keepOn = ref.read(keepScreenOnProvider);
+    if (keepOn) {
+      // ignore: discarded_futures
+      WakelockPlus.enable();
+    } else {
+      // ignore: discarded_futures
+      WakelockPlus.disable();
+    }
+    // 変更監視
+    ref.listen<bool>(keepScreenOnProvider, (prev, next) {
+      if (next) {
+        // ignore: discarded_futures
+        WakelockPlus.enable();
+      } else {
+        // ignore: discarded_futures
+        WakelockPlus.disable();
+      }
+    });
     _refresh();
   }
 
@@ -121,6 +142,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  @override
+  void dispose() {
+    // ページ離脱時は必ず wakelock を解除する
+    // ignore: discarded_futures
+    WakelockPlus.disable();
+    super.dispose();
   }
 
   @override

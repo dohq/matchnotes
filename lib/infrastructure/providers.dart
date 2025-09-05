@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:matchnotes/infrastructure/db/app_database.dart';
 import 'package:matchnotes/infrastructure/db/open.dart';
 import 'package:matchnotes/infrastructure/repositories/daily_character_record_repository_drift.dart';
@@ -117,5 +118,77 @@ final importDailyRecordsCsvUsecaseProvider =
       return ImportDailyRecordsCsvUsecase(repo, db);
     });
 
-// UI theme mode (light/dark/system)
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
+// Persistent Settings Keys
+const _kPrefThemeMode = 'settings.themeMode'; // system|light|dark
+const _kPrefKeepScreenOn = 'settings.keepScreenOn'; // bool
+
+String _themeModeToString(ThemeMode m) {
+  switch (m) {
+    case ThemeMode.light:
+      return 'light';
+    case ThemeMode.dark:
+      return 'dark';
+    case ThemeMode.system:
+      return 'system';
+  }
+}
+
+ThemeMode _themeModeFromString(String? s) {
+  switch (s) {
+    case 'light':
+      return ThemeMode.light;
+    case 'dark':
+      return ThemeMode.dark;
+    case 'system':
+    default:
+      return ThemeMode.system;
+  }
+}
+
+class ThemeModeController extends StateNotifier<ThemeMode> {
+  ThemeModeController() : super(ThemeMode.system) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kPrefThemeMode);
+    final loaded = _themeModeFromString(raw);
+    if (loaded != state) state = loaded;
+  }
+
+  Future<void> setMode(ThemeMode m) async {
+    state = m;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPrefThemeMode, _themeModeToString(m));
+  }
+}
+
+final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
+  (ref) {
+    return ThemeModeController();
+  },
+);
+
+class KeepScreenOnController extends StateNotifier<bool> {
+  KeepScreenOnController() : super(false) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final v = prefs.getBool(_kPrefKeepScreenOn) ?? false;
+    if (v != state) state = v;
+  }
+
+  Future<void> setKeepOn(bool v) async {
+    state = v;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kPrefKeepScreenOn, v);
+  }
+}
+
+final keepScreenOnProvider =
+    StateNotifierProvider<KeepScreenOnController, bool>((ref) {
+      return KeepScreenOnController();
+    });
