@@ -24,6 +24,7 @@ class _DailyPageState extends ConsumerState<DailyPage> {
 
   bool _busy = false;
   List<domain.DailyCharacterRecord> _dailyList = const [];
+  bool _initialized = false;
 
   String get gameId => _gameIdCtl.text.trim();
   String get charId => _charIdCtl.text.trim();
@@ -40,7 +41,12 @@ class _DailyPageState extends ConsumerState<DailyPage> {
     try {
       await Future.wait([_refreshSummary(), _refreshRecord(), _refreshList()]);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _initialized = true;
+        });
+      }
     }
   }
 
@@ -159,6 +165,11 @@ class _DailyPageState extends ConsumerState<DailyPage> {
   @override
   Widget build(BuildContext context) {
     final df = DateFormat('yyyy-MM-dd');
+    if (!_initialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daily Records'),

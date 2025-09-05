@@ -22,6 +22,7 @@ class MemoPage extends ConsumerStatefulWidget {
 class _MemoPageState extends ConsumerState<MemoPage> {
   final _ctl = TextEditingController();
   bool _busy = false;
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -44,7 +45,12 @@ class _MemoPageState extends ConsumerState<MemoPage> {
       );
       _ctl.text = rec?.memo ?? '';
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _initialized = true;
+        });
+      }
     }
   }
 
@@ -100,6 +106,11 @@ class _MemoPageState extends ConsumerState<MemoPage> {
   @override
   Widget build(BuildContext context) {
     final df = DateFormat('yyyy-MM-dd');
+    if (!_initialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: Text('メモ (${df.format(widget.date)})')),
       body: Padding(
