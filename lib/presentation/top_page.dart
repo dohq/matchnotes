@@ -4,7 +4,6 @@ import 'package:matchnotes/domain/usecases/get_monthly_win_rates_per_game.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/presentation/x_axis_labels.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 import 'game_select_page.dart';
 import 'settings_page.dart';
@@ -30,11 +29,19 @@ class _PlottedPoint {
 }
 
 class _TopPageState extends ConsumerState<TopPage> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
+
+  void _prevMonth() {
+    setState(() => _month = DateTime(_month.year, _month.month - 1, 1));
+  }
+
+  void _nextMonth() {
+    setState(() => _month = DateTime(_month.year, _month.month + 1, 1));
+  }
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = Theme.of(context).textTheme.titleMedium;
     return Scaffold(
       appBar: AppBar(
         title: const Text('MatchNotes'),
@@ -52,40 +59,44 @@ class _TopPageState extends ConsumerState<TopPage> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            // Calendar
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: TableCalendar(
-                focusedDay: _focusedDay,
-                firstDay: DateTime.utc(2000, 1, 1),
-                lastDay: DateTime.utc(2100, 12, 31),
-                headerStyle: const HeaderStyle(formatButtonVisible: false),
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selected, focused) {
-                  setState(() {
-                    _selectedDay = selected;
-                    _focusedDay = focused;
-                  });
-                },
-                onPageChanged: (focused) {
-                  setState(() => _focusedDay = focused);
-                },
-                calendarFormat: CalendarFormat.month,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Graph
-            Text('日別勝率グラフ %', style: Theme.of(context).textTheme.titleMedium),
+            // 今日のサマリ
+            Text('今日のサマリ', style: titleStyle),
             const SizedBox(height: 8),
-            _MonthlyWinRateChart(
-              month: DateTime(_focusedDay.year, _focusedDay.month, 1),
-            ),
+            _TodaySummaryCard(date: DateTime.now()),
             const SizedBox(height: 16),
-            // Navigation to Game Select
+            // 直近7日のトレンド
+            Text('直近7日のトレンド', style: titleStyle),
+            const SizedBox(height: 8),
+            const _SevenDayTrendCard(),
+            const SizedBox(height: 16),
+            // 月のトレンド（切替可能）
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('月のトレンド', style: titleStyle),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _prevMonth,
+                      icon: const Icon(Icons.chevron_left),
+                      tooltip: '前月',
+                    ),
+                    Text(
+                      '${_month.year}/${_month.month.toString().padLeft(2, '0')}',
+                    ),
+                    IconButton(
+                      onPressed: _nextMonth,
+                      icon: const Icon(Icons.chevron_right),
+                      tooltip: '翌月',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _MonthlyWinRateChart(month: _month),
+            const SizedBox(height: 16),
+            // ゲーム選択へ（ナビ近道は維持）
             FilledButton.icon(
               onPressed: () => Navigator.of(
                 context,
@@ -98,6 +109,283 @@ class _TopPageState extends ConsumerState<TopPage> {
       ),
     );
   }
+}
+
+class _TodaySummaryCard extends ConsumerWidget {
+  final DateTime date;
+  const _TodaySummaryCard({required this.date});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncUsecase = ref.watch(getMonthlyWinRatesPerGameUsecaseProvider);
+    return asyncUsecase.when(
+      loading: () => _skeleton(context),
+      error: (e, st) => _errorBox(context, e),
+      data: (usecase) {
+        // 月単位の集計から当日分を抽出（ゲーム別 + キャラ別内訳も利用）
+        return FutureBuilder<List<GameMonthlySeries>>(
+          future: usecase.execute(DateTime(date.year, date.month, 1)),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return _skeleton(context);
+            final series = snapshot.data!;
+            final today = DateTime(date.year, date.month, date.day);
+            // ゲーム別に当日のポイントを抽出
+            final items = <_TodayGameRow>[];
+            for (final s in series) {
+              final pt = s.points.firstWhere(
+                (p) =>
+                    p.day.year == today.year &&
+                    p.day.month == today.month &&
+                    p.day.day == today.day,
+                orElse: () => DailyWinRatePoint(
+                  day: DateTime(1970),
+                  winRate: 0,
+                  wins: 0,
+                  losses: 0,
+                  byCharacter: {},
+                ),
+              );
+              final total = pt.wins + pt.losses;
+              if (total > 0) {
+                items.add(
+                  _TodayGameRow(
+                    gameName: s.gameName,
+                    wins: pt.wins,
+                    losses: pt.losses,
+                    byCharacter: pt.byCharacter,
+                  ),
+                );
+              }
+            }
+            items.sort(
+              (a, b) => (b.wins + b.losses).compareTo(a.wins + a.losses),
+            );
+            if (items.isEmpty) {
+              return _emptyBox(context, '当日の対戦はありません');
+            }
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final row = items[index];
+                  final total = row.wins + row.losses;
+                  final rate = total == 0 ? 0 : (row.wins / total) * 100;
+                  return ExpansionTile(
+                    title: Text(row.gameName),
+                    subtitle: Text(
+                      '合計 $total / 勝 ${{}} / 負 ${{}} / ${rate.toStringAsFixed(1)}%'
+                          .replaceFirst('{{}}', row.wins.toString())
+                          .replaceFirst('{{}}', row.losses.toString()),
+                    ),
+                    children: [
+                      if (row.byCharacter.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(
+                            'キャラ別データなし',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        )
+                      else
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Column(
+                            children: [
+                              for (final e
+                                  in row.byCharacter.entries.toList()..sort(
+                                    (a, b) => (b.value.total).compareTo(
+                                      a.value.total,
+                                    ),
+                                  ))
+                                ListTile(
+                                  dense: true,
+                                  title: Text(e.key),
+                                  subtitle: Text(
+                                    '合計 ${e.value.total} / 勝 ${e.value.wins} / 負 ${e.value.losses} / '
+                                    '${(e.value.rate * 100).toStringAsFixed(1)}%',
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _skeleton(BuildContext context) => Container(
+    height: 96,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    alignment: Alignment.center,
+    child: const CircularProgressIndicator.adaptive(),
+  );
+
+  Widget _errorBox(BuildContext context, Object e) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text('読み込みエラー: $e'),
+  );
+
+  Widget _emptyBox(BuildContext context, String msg) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(msg),
+  );
+}
+
+class _TodayGameRow {
+  final String gameName;
+  final int wins;
+  final int losses;
+  final Map<String, CharWinLoss> byCharacter;
+  _TodayGameRow({
+    required this.gameName,
+    required this.wins,
+    required this.losses,
+    required this.byCharacter,
+  });
+}
+
+class _SevenDayTrendCard extends ConsumerWidget {
+  const _SevenDayTrendCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder(
+      future: _loadData(ref),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return _skeleton(context);
+        final points = snapshot.data!;
+        if (points.isEmpty) return _emptyBox(context, 'データがありません');
+        return Container(
+          height: 160,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: SfCartesianChart(
+            plotAreaBorderWidth: 0,
+            primaryXAxis: DateTimeAxis(
+              intervalType: DateTimeIntervalType.days,
+              dateFormat: null,
+              majorGridLines: const MajorGridLines(width: 0),
+            ),
+            primaryYAxis: NumericAxis(
+              minimum: 0,
+              maximum: 100,
+              interval: 25,
+              axisLabelFormatter: (args) => ChartAxisLabel(
+                '${args.value.toInt()}%',
+                Theme.of(context).textTheme.bodySmall!,
+              ),
+            ),
+            series: [
+              LineSeries<_SevenPoint, DateTime>(
+                dataSource: points,
+                xValueMapper: (p, _) => p.day,
+                yValueMapper: (p, _) => p.pct,
+                color: Colors.blue,
+                width: 2,
+                markerSettings: const MarkerSettings(
+                  isVisible: true,
+                  width: 3,
+                  height: 3,
+                ),
+                name: 'Win% (7d)',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<List<_SevenPoint>> _loadData(WidgetRef ref) async {
+    final repo = await ref.read(dailyCharacterRecordRepositoryProvider.future);
+    final today = DateTime.now();
+    final start = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 6));
+    final end = DateTime(today.year, today.month, today.day);
+    final rows = await repo.findByRange(start: start, end: end);
+    // 集計（全ゲーム合算、日単位）
+    final map = <int, _SevenPoint>{};
+    for (final r in rows) {
+      final d = DateTime(r.id.date.year, r.id.date.month, r.id.date.day);
+      final key = d.millisecondsSinceEpoch;
+      final cur = map[key];
+      final w = (cur?.wins ?? 0) + r.wins;
+      final l = (cur?.losses ?? 0) + r.losses;
+      map[key] = _SevenPoint(day: d, wins: w, losses: l);
+    }
+    // 欠損日を0%で補完（視覚的な連続性のため）
+    for (var i = 0; i < 7; i++) {
+      final d = DateTime(
+        start.year,
+        start.month,
+        start.day,
+      ).add(Duration(days: i));
+      final key = d.millisecondsSinceEpoch;
+      map.putIfAbsent(key, () => _SevenPoint(day: d, wins: 0, losses: 0));
+    }
+    final sorted = map.values.toList()..sort((a, b) => a.day.compareTo(b.day));
+    return sorted
+        .map((e) => _SevenPoint(day: e.day, wins: e.wins, losses: e.losses))
+        .toList();
+  }
+
+  Widget _skeleton(BuildContext context) => Container(
+    height: 160,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    alignment: Alignment.center,
+    child: const CircularProgressIndicator.adaptive(),
+  );
+
+  Widget _emptyBox(BuildContext context, String msg) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(msg),
+  );
+}
+
+class _SevenPoint {
+  final DateTime day;
+  final int wins;
+  final int losses;
+  _SevenPoint({required this.day, required this.wins, required this.losses});
+  double get rate => (wins + losses) == 0 ? 0 : wins / (wins + losses);
+  double get pct => rate * 100;
 }
 
 class _MonthlyWinRateChart extends ConsumerWidget {

@@ -1,0 +1,42 @@
+# Repository Guidelines
+
+本書は MatchNotes のコントリビュータ向けガイドです。Flutter/Dart、drift、Riverpod を使用します。
+
+## Project Structure & Module Organization
+- `lib/domain/`: エンティティ・ユースケース・リポジトリIF。
+- `lib/infrastructure/`: DB（drift）とDI実装。`db/app_database.dart`・`db/open.dart`・`repositories/`・`providers.dart`。
+- `lib/presentation/`: UI。エントリは `lib/main.dart`。
+- `test/`: `domain/`・`e2e/`・`widget_test.dart`。
+- `scripts/`: `emulator_start.sh`・`pre-commit` など。`docs/`: `db_migration.md`。
+
+## Build, Test, and Development Commands
+```bash
+flutter pub get                 # 依存取得
+make build                      # build_runner によるコード生成（drift等）
+make format && make lint        # フォーマット / 静的解析
+make test                       # ユニット/ウィジェット/E2E テスト
+make coverage coverage-html     # lcov/html レポート作成（要 lcov, genhtml）
+make emulator-start EMULATOR_AVD=Pixel_8a_API_34
+make install-hooks              # pre-commit 導入（format+analyze を強制）
+```
+
+## Coding Style & Naming Conventions
+- フォーマッタ: `dart format`（2スペース）。Lints: `flutter_lints`（`analysis_options.yaml`）。
+- 命名: ファイルは `snake_case.dart`、クラスは UpperCamelCase、関数/変数は lowerCamelCase。
+- 生成物 `*.g.dart` は手動編集しない。スキーマ変更時は `make build` を実行。
+
+## Testing Guidelines
+- フレームワーク: `flutter_test`。配置: `test/domain/`・`test/e2e/`・`test/widget_test.dart`。
+- 命名: `*_test.dart`。実行: `make test`。カバレッジ: `make coverage`。
+- drift のE2Eは `NativeDatabase.memory()` を利用し実DB相当の動作を検証。
+
+## Commit & Pull Request Guidelines
+- コミット規約: Conventional Commits を推奨（例: `feat: ...`, `fix: ...`, `docs: ...`, `ui: ...`, `db: ...`）。必要に応じて `scope` を使用。
+- PR: 目的・背景・変更点を簡潔に。関連Issueをリンク。UI変更はスクリーンショット添付。テスト/ドキュメントの更新を含める。
+- Git hooks: `make install-hooks` で pre-commit を導入（format/analyze が通らない場合はコミット中断）。
+- DB変更時は `docs/db_migration.md` を更新。
+
+## Security & Configuration Tips
+- 秘匿情報は扱わずローカルSQLiteを使用。生成・マイグレーションはソース管理下のコードで再現可能。
+- Androidエミュレータの AVD 名は `EMULATOR_AVD` で上書き可能。
+
