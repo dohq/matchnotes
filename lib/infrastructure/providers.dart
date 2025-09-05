@@ -106,7 +106,8 @@ final exportDailyRecordsCsvUsecaseProvider =
       final repo = await ref.watch(
         dailyCharacterRecordRepositoryProvider.future,
       );
-      return ExportDailyRecordsCsvUsecase(repo);
+      final db = await ref.watch(appDatabaseProvider.future);
+      return ExportDailyRecordsCsvUsecase(repo, db);
     });
 
 final importDailyRecordsCsvUsecaseProvider =

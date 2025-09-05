@@ -12,7 +12,9 @@ class ImportDailyRecordsCsvUsecase {
   ImportDailyRecordsCsvUsecase(this.repo, this.db);
 
   /// Imports records from a CSV file.
-  /// Expected header: game_id,character_id,yyyymmdd,wins,losses
+  /// Expected header (two variants):
+  /// - legacy: game_id,character_id,yyyymmdd,wins,losses
+  /// - extended: game_id,character_id,game_name,character_name,yyyymmdd,wins,losses
   /// Lines ending: LF assumed.
   /// Returns number of imported rows.
   Future<int> execute({required File file}) async {
@@ -30,12 +32,23 @@ class ImportDailyRecordsCsvUsecase {
 
     // Validate header
     final header = rows.first.map((e) => e.toString()).toList(growable: false);
-    if (header.length < 5 ||
-        header[0] != 'game_id' ||
-        header[1] != 'character_id' ||
-        header[2] != 'yyyymmdd' ||
-        header[3] != 'wins' ||
-        header[4] != 'losses') {
+    final isExtended =
+        header.length >= 7 &&
+        header[0] == 'game_id' &&
+        header[1] == 'character_id' &&
+        header[2] == 'game_name' &&
+        header[3] == 'character_name' &&
+        header[4] == 'yyyymmdd' &&
+        header[5] == 'wins' &&
+        header[6] == 'losses';
+    final isLegacy =
+        header.length >= 5 &&
+        header[0] == 'game_id' &&
+        header[1] == 'character_id' &&
+        header[2] == 'yyyymmdd' &&
+        header[3] == 'wins' &&
+        header[4] == 'losses';
+    if (!isExtended && !isLegacy) {
       throw FormatException('CSV header mismatch');
     }
 
@@ -47,16 +60,18 @@ class ImportDailyRecordsCsvUsecase {
     final errors = <String>[];
     for (var i = 1; i < rows.length; i++) {
       final r = rows[i];
-      if (r.length < 5) {
+      if ((!isExtended && r.length < 5) || (isExtended && r.length < 7)) {
         skipped++;
         errors.add('line ${i + 1}: 列数が不足しています');
         continue;
       }
       final gameId = r[0].toString().trim();
       final characterId = r[1].toString().trim();
-      final yyyymmdd = int.tryParse(r[2].toString());
-      final wins = int.tryParse(r[3].toString());
-      final losses = int.tryParse(r[4].toString());
+      final gameNameCsv = isExtended ? r[2].toString().trim() : null;
+      final charNameCsv = isExtended ? r[3].toString().trim() : null;
+      final yyyymmdd = int.tryParse(r[isExtended ? 4 : 2].toString());
+      final wins = int.tryParse(r[isExtended ? 5 : 3].toString());
+      final losses = int.tryParse(r[isExtended ? 6 : 4].toString());
 
       if (gameId.isEmpty || characterId.isEmpty) {
         skipped++;
@@ -80,12 +95,33 @@ class ImportDailyRecordsCsvUsecase {
         continue;
       }
 
-      // ensure game exists in master
+      // ensure game exists in master (use provided name when available)
       if (!known.contains(gameId)) {
+        final gName = (gameNameCsv == null || gameNameCsv.isEmpty)
+            ? gameId
+            : gameNameCsv;
         await db.upsertGame(
-          GamesCompanion(id: Value(gameId), name: Value(gameId)),
+          GamesCompanion(id: Value(gameId), name: Value(gName)),
         );
         known.add(gameId);
+      }
+
+      // ensure character master exists (use provided name when available)
+      final existingChar = await (db.select(
+        db.characters,
+      )..where((t) => t.id.equals(characterId))).getSingleOrNull();
+      if (existingChar == null) {
+        final cName = (charNameCsv == null || charNameCsv.isEmpty)
+            ? characterId
+            : charNameCsv;
+        await db.upsertCharacter(
+          CharactersCompanion(
+            id: Value(characterId),
+            gameId: Value(gameId),
+            name: Value(cName),
+            colorArgb: const Value.absent(),
+          ),
+        );
       }
 
       final record = DailyCharacterRecord(

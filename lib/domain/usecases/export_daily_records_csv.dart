@@ -2,13 +2,17 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 import 'package:matchnotes/domain/repositories.dart';
+import 'package:matchnotes/infrastructure/db/app_database.dart';
 
 class ExportDailyRecordsCsvUsecase {
   final DailyCharacterRecordRepository repo;
-  ExportDailyRecordsCsvUsecase(this.repo);
+  final AppDatabase? db; // optional: if null, export legacy 5-column CSV
+  ExportDailyRecordsCsvUsecase(this.repo, [this.db]);
 
   /// Exports records in [start..end] (inclusive) to CSV.
-  /// Columns: game_id,character_id,yyyymmdd,wins,losses (LF, no memo)
+  /// Columns:
+  /// - when db != null: game_id,character_id,game_name,character_name,yyyymmdd,wins,losses
+  /// - when db == null: game_id,character_id,yyyymmdd,wins,losses (legacy)
   /// Returns the written file.
   Future<File> execute({
     DateTime? start,
@@ -18,6 +22,14 @@ class ExportDailyRecordsCsvUsecase {
     final s = start ?? DateTime(1970, 1, 1);
     final e = end ?? DateTime(2100, 12, 31);
     final rows = await repo.findByRange(start: s, end: e);
+    Map<String, String> gameName = const {};
+    Map<String, String> charName = const {};
+    if (db != null) {
+      final games = await db!.fetchAllGames();
+      gameName = {for (final g in games) g.id: g.name};
+      final chars = await db!.fetchAllCharacters();
+      charName = {for (final c in chars) c.id: c.name};
+    }
 
     // Sort for stable output
     rows.sort((a, b) {
@@ -29,15 +41,39 @@ class ExportDailyRecordsCsvUsecase {
     });
 
     final output = <List<dynamic>>[];
-    output.add(['game_id', 'character_id', 'yyyymmdd', 'wins', 'losses']);
-    for (final r in rows) {
+    final useNames = db != null;
+    if (useNames) {
       output.add([
-        r.id.gameId,
-        r.id.characterId,
-        _yyyymmddOf(r.id.date),
-        r.wins,
-        r.losses,
+        'game_id',
+        'character_id',
+        'game_name',
+        'character_name',
+        'yyyymmdd',
+        'wins',
+        'losses',
       ]);
+      for (final r in rows) {
+        output.add([
+          r.id.gameId,
+          r.id.characterId,
+          gameName[r.id.gameId] ?? r.id.gameId,
+          charName[r.id.characterId] ?? r.id.characterId,
+          _yyyymmddOf(r.id.date),
+          r.wins,
+          r.losses,
+        ]);
+      }
+    } else {
+      output.add(['game_id', 'character_id', 'yyyymmdd', 'wins', 'losses']);
+      for (final r in rows) {
+        output.add([
+          r.id.gameId,
+          r.id.characterId,
+          _yyyymmddOf(r.id.date),
+          r.wins,
+          r.losses,
+        ]);
+      }
     }
 
     final csv = const ListToCsvConverter(eol: '\n').convert(output);

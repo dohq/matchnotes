@@ -222,6 +222,7 @@ class CharacterSelectPage extends ConsumerWidget {
           // 次フレームで再取得して UI 更新
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.invalidate(fetchCharactersByGameProvider(gameId));
+            ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
           });
         }
         break;
@@ -251,6 +252,7 @@ class CharacterSelectPage extends ConsumerWidget {
           // 次フレームで再取得して UI 更新
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.invalidate(fetchCharactersByGameProvider(gameId));
+            ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
           });
         }
         break;
