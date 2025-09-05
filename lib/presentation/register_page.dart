@@ -327,18 +327,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // 勝率ラベル
-            Center(
-              child: Text(
-                '勝率',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 0),
             // 勝率（横幅いっぱいに近いサイズで自動縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -363,7 +351,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             const TextSpan(
                               text: '%',
                               style: TextStyle(
-                                fontSize: 140, // 数字よりやや小さく
+                                fontSize: 100, // 数字よりやや小さく
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
