@@ -28,6 +28,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _busy = false;
   final _undo = <Future<void> Function()>[]; // simple undo stack
   String? _memo;
+  // メモ欄スクロール用
+  final ScrollController _memoScroll = ScrollController();
 
   String get gameId => widget.gameId;
   String get charId => widget.characterId;
@@ -154,6 +156,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     // ページ離脱時は必ず wakelock を解除する
     // ignore: discarded_futures
     WakelockPlus.disable();
+    _memoScroll.dispose();
     super.dispose();
   }
 
@@ -185,7 +188,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
+          color: cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -242,8 +245,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ? 'n/a'
         : '${wrPercent.toStringAsFixed(1)}%';
 
-    // トースト通知は無効化（要望により）
-
     Future<void> onWinTap() async {
       if (_busy) return;
       HapticFeedback.lightImpact();
@@ -276,7 +277,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('登録')),
+      appBar: AppBar(
+        title: const Text('登録'),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        // メモ欄スクロール時に色が変わるのを防ぐ
+        notificationPredicate: (_) => false,
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
@@ -411,14 +419,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest,
+                      color: cs.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: needsScroll
-                        ? SingleChildScrollView(
-                            child: Text(
-                              hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
-                              style: textStyle,
+                        ? Scrollbar(
+                            controller: _memoScroll,
+                            thumbVisibility: true,
+                            child: SingleChildScrollView(
+                              controller: _memoScroll,
+                              child: Text(
+                                hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
+                                style: textStyle,
+                              ),
                             ),
                           )
                         : Text(
