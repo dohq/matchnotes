@@ -65,7 +65,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       setState(() {
         _wins = rec?.wins ?? 0;
         _losses = rec?.losses ?? 0;
-        _memo = rec?.memo;
+        final rawMemo = rec?.memo;
+        // 空文字や空白のみは null として扱い、UI ではプレースホルダ表示
+        _memo = (rawMemo == null || rawMemo.trim().isEmpty) ? null : rawMemo;
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -240,36 +242,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ? 'n/a'
         : '${wrPercent.toStringAsFixed(1)}%';
 
-    void showSnack(String msg) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            duration: const Duration(milliseconds: 800),
-          ),
-        );
-    }
+    // トースト通知は無効化（要望により）
 
     Future<void> onWinTap() async {
       if (_busy) return;
       HapticFeedback.lightImpact();
       await _incWin();
-      showSnack('勝+1');
     }
 
     Future<void> onLossTap() async {
       if (_busy) return;
       HapticFeedback.lightImpact();
       await _incLoss();
-      showSnack('負+1');
     }
 
     Future<void> onUndoTap() async {
       if (_busy) return;
       HapticFeedback.selectionClick();
       await _undoLast();
-      showSnack('Undoしました');
     }
 
     Future<void> onMemoTap() async {
@@ -383,38 +373,73 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ],
             ),
             const SizedBox(height: 24),
-            // メモ表示エリア（長文時はスクロール。残りの空き高さをすべて使用）
-            Builder(
-              builder: (context) {
-                final theme = Theme.of(context);
-                final cs = theme.colorScheme;
-                final textTheme = theme.textTheme;
-                final hasMemo = (_memo != null && _memo!.trim().isNotEmpty);
-                return Expanded(
-                  child: Container(
+            // メモ表示エリア（可変・上限あり）。余白がある場合は上限まで広がり、長文は内部スクロール。
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  final theme = Theme.of(context);
+                  final cs = theme.colorScheme;
+                  final textTheme = theme.textTheme;
+                  final hasMemo = (_memo != null && _memo!.trim().isNotEmpty);
+                  final textStyle = hasMemo
+                      ? (textTheme.bodyMedium ?? const TextStyle())
+                      : (textTheme.bodyMedium ?? const TextStyle()).copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
+                        );
+                  final screenH = MediaQuery.of(context).size.height;
+                  final capH = screenH * 0.32; // 上限（画面高さの約3割）
+                  // テキスト高さを計測
+                  final tp = TextPainter(
+                    text: TextSpan(
+                      text: hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
+                      style: textStyle,
+                    ),
+                    textDirection: Directionality.of(context),
+                    maxLines: null,
+                  )..layout(maxWidth: box.maxWidth - 24);
+                  final contentH = tp.size.height + 24; // 内側 padding 分を加味
+                  // 余白がある場合は余白いっぱいまで使う（未使用スペースを作らない）
+                  final viewportH = box.maxHeight.isFinite
+                      ? box.maxHeight
+                      : capH;
+                  final targetH = contentH < viewportH ? contentH : viewportH;
+                  final needsScroll = contentH > viewportH;
+
+                  final memoBox = Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: SingleChildScrollView(
-                      child: Text(
-                        hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
-                        style: hasMemo
-                            ? textTheme.bodyMedium
-                            : textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.7),
-                              ),
-                      ),
+                    child: needsScroll
+                        ? SingleChildScrollView(
+                            child: Text(
+                              hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
+                              style: textStyle,
+                            ),
+                          )
+                        : Text(
+                            hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
+                            style: textStyle,
+                          ),
+                  );
+
+                  // Expanded領域の先頭に上詰めで配置し、ボタンは常に下端に維持
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: targetH.toDouble(),
+                      child: memoBox,
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
             const SizedBox(height: 16),
-            // ここから下は通常のフロー（ページ全体がスクロール対象）
 
             // Undo / メモ をカウントボタンの上に配置
             Row(
