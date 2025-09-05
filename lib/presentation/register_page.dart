@@ -27,6 +27,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   int _losses = 0;
   bool _busy = false;
   final _undo = <Future<void> Function()>[]; // simple undo stack
+  String? _memo;
 
   String get gameId => widget.gameId;
   String get charId => widget.characterId;
@@ -64,6 +65,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       setState(() {
         _wins = rec?.wins ?? 0;
         _losses = rec?.losses ?? 0;
+        _memo = rec?.memo;
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -383,6 +385,33 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             ),
             const SizedBox(height: 24),
 
+            // メモ表示エリア（存在する場合は本文、無い場合は薄いプレースホルダ）
+            Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                final cs = theme.colorScheme;
+                final textTheme = theme.textTheme;
+                final hasMemo = (_memo != null && _memo!.trim().isNotEmpty);
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    hasMemo ? _memo!.trim() : 'メモがある場合はここに表示されます',
+                    style: hasMemo
+                        ? textTheme.bodyMedium
+                        : textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7),
+                          ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             // 中央余白（片手で押しやすくするため下側にボタンを寄せる）
             const Spacer(),
 
