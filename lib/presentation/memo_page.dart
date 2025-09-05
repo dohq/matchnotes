@@ -68,13 +68,19 @@ class _MemoPageState extends ConsumerState<MemoPage> {
       final current =
           await repo.findById(id) ??
           domain.DailyCharacterRecord(id: id, wins: 0, losses: 0, memo: null);
-      await repo.upsert(
-        current.copyWith(memo: _ctl.text.isEmpty ? null : _ctl.text),
+      final normalized = _ctl.text.trim();
+      final next = domain.DailyCharacterRecord(
+        id: current.id,
+        wins: current.wins,
+        losses: current.losses,
+        memo: normalized.isEmpty ? null : normalized,
       );
+      await repo.upsert(next);
+      // 明示的にリポジトリを無効化して呼び出し元の再取得を促す
+      ref.invalidate(dailyCharacterRecordRepositoryProvider);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Memo saved.')));
+        // 呼び出し元へ更新後の memo を返す（null または文字列）
+        Navigator.of(context).pop(normalized.isEmpty ? null : normalized);
       }
     } finally {
       if (mounted) setState(() => _busy = false);

@@ -124,7 +124,32 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertRecord(Insertable<DailyCharacterRecordRow> row) async {
+    // まず通常の UPSERT を実行
     await into(dailyCharacterRecords).insertOnConflictUpdate(row);
+    // Drift の insertOnConflictUpdate は通常 nullable フィールドにも反映されるが、
+    // 念のため memo を明示更新して "null への上書き" を確実にする。
+    try {
+      final c = row as DailyCharacterRecordsCompanion;
+      // memo が present（null を含む）である場合のみ明示更新
+      if (c.memo.present &&
+          c.gameId.present &&
+          c.characterId.present &&
+          c.yyyymmdd.present) {
+        await (update(dailyCharacterRecords)..where(
+              (t) =>
+                  t.gameId.equals(c.gameId.value) &
+                  t.characterId.equals(c.characterId.value) &
+                  t.yyyymmdd.equals(c.yyyymmdd.value),
+            ))
+            .write(
+              DailyCharacterRecordsCompanion(
+                memo: c.memo, // null でもそのまま上書きする
+              ),
+            );
+      }
+    } catch (_) {
+      // 型キャストに失敗した場合などは静かにスキップ（通常は起きない）
+    }
   }
 
   // Games DAO helpers

@@ -273,7 +273,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   MemoPage(gameId: gameId, characterId: charId, date: day),
             ),
           )
-          .then((_) => _refresh());
+          .then((result) {
+            // 楽観的に即時反映（null または String）
+            if (mounted) {
+              setState(() {
+                _memo = (result is String && result.trim().isNotEmpty)
+                    ? result
+                    : null;
+              });
+            }
+            // メモ変更の即時反映のためリポジトリを明示的に無効化して再取得
+            ref.invalidate(dailyCharacterRecordRepositoryProvider);
+            return _refresh();
+          });
     }
 
     return Scaffold(
