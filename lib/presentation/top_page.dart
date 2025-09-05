@@ -5,6 +5,7 @@ import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/presentation/x_axis_labels.dart';
 import 'package:matchnotes/infrastructure/db/app_database.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:matchnotes/domain/date_utils.dart';
 
 import 'game_select_page.dart';
 import 'settings_page.dart';
@@ -131,13 +132,22 @@ class _TodaySummaryCard extends ConsumerWidget {
       loading: () => _skeleton(context),
       error: (e, st) => _errorBox(context, e),
       data: (usecase) {
-        // 月単位の集計から当日分を抽出（ゲーム別 + キャラ別内訳も利用）
+        // 切替時刻を考慮した論理上の「今日」を使用
+        final cutoffMin = ref.watch(cutoffMinutesProvider);
+        final logicalToday = truncateWithCutoffMinutes(date, cutoffMin);
+        // 論理上の今日が属する月で月次集計を取得
         return FutureBuilder<List<GameMonthlySeries>>(
-          future: usecase.execute(DateTime(date.year, date.month, 1)),
+          future: usecase.execute(
+            DateTime(logicalToday.year, logicalToday.month, 1),
+          ),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return _skeleton(context);
             final series = snapshot.data!;
-            final today = DateTime(date.year, date.month, date.day);
+            final today = DateTime(
+              logicalToday.year,
+              logicalToday.month,
+              logicalToday.day,
+            );
             // ゲーム別に当日のポイントを抽出
             final items = <_TodayGameRow>[];
             for (final s in series) {
@@ -298,7 +308,6 @@ class _SevenDayTrendCard extends ConsumerWidget {
             if (!snapshot.hasData) return _skeleton(context);
             final rows = snapshot.data!;
             final points = _aggregateSevenDays(rows, start);
-            if (points.isEmpty) return _emptyBox(context, 'データがありません');
             return Container(
               height: 160,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -309,8 +318,12 @@ class _SevenDayTrendCard extends ConsumerWidget {
               child: SfCartesianChart(
                 plotAreaBorderWidth: 0,
                 primaryXAxis: DateTimeAxis(
+                  minimum: start,
+                  maximum: end,
                   intervalType: DateTimeIntervalType.days,
                   dateFormat: null,
+                  rangePadding: ChartRangePadding.none,
+                  edgeLabelPlacement: EdgeLabelPlacement.shift,
                   majorGridLines: const MajorGridLines(width: 0),
                 ),
                 primaryYAxis: NumericAxis(
@@ -434,15 +447,6 @@ class _SevenDayTrendCard extends ConsumerWidget {
     ),
     alignment: Alignment.center,
     child: const CircularProgressIndicator.adaptive(),
-  );
-
-  Widget _emptyBox(BuildContext context, String msg) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Text(msg),
   );
 }
 
