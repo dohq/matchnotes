@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/entities.dart' as domain;
@@ -186,37 +187,60 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final charName = character.name;
     final df = DateFormat('yyyy-MM-dd');
     final wr = (_wins + _losses) == 0 ? null : _wins / (_wins + _losses);
-    final wrText = wr == null ? 'n/a' : wr.toStringAsFixed(2);
+    final wrText = wr == null ? 'n/a' : '${(wr * 100).toStringAsFixed(1)}%';
+
+    void showSnack(String msg) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            duration: const Duration(milliseconds: 800),
+          ),
+        );
+    }
+
+    Future<void> onWinTap() async {
+      if (_busy) return;
+      HapticFeedback.lightImpact();
+      await _incWin();
+      showSnack('勝+1');
+    }
+
+    Future<void> onLossTap() async {
+      if (_busy) return;
+      HapticFeedback.lightImpact();
+      await _incLoss();
+      showSnack('負+1');
+    }
+
+    Future<void> onUndoTap() async {
+      if (_busy) return;
+      HapticFeedback.selectionClick();
+      await _undoLast();
+      showSnack('Undoしました');
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text('登録: $gameName/$charName')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('今日の勝率: $wrText'),
-            const SizedBox(height: 8),
-            Text('日付: ${df.format(day)}'),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              children: [
-                FilledButton.icon(
-                  onPressed: _busy ? null : _incWin,
-                  icon: const Icon(Icons.thumb_up),
-                  label: const Text('勝利+1'),
-                ),
-                FilledButton.icon(
-                  onPressed: _busy ? null : _incLoss,
-                  icon: const Icon(Icons.thumb_down),
-                  label: const Text('負け+1'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _busy ? null : _undoLast,
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : onUndoTap,
                   icon: const Icon(Icons.undo),
                   label: const Text('Undo'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
-                OutlinedButton.icon(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
                   onPressed: _busy
                       ? null
                       : () => Navigator.of(context)
@@ -232,11 +256,85 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             .then((_) => _refresh()),
                   icon: const Icon(Icons.note),
                   label: const Text('メモ'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ヘッダ情報
+            Text('今日の勝率', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Chip(label: Text(wrText)),
+                const SizedBox(width: 12),
+                Chip(label: Text('合計 ${_wins + _losses}')),
+                const SizedBox(width: 12),
+                Chip(
+                  label: Text('勝 $_wins'),
+                  backgroundColor: Colors.green.withValues(alpha: 0.15),
+                  side: const BorderSide(color: Colors.green),
+                ),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text('負 $_losses'),
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  side: const BorderSide(color: Colors.red),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Text(
+              '日付: ${df.format(day)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             const SizedBox(height: 16),
-            if (_busy) const LinearProgressIndicator(),
+
+            // 中央余白（片手で押しやすくするため下側にボタンを寄せる）
+            const Spacer(),
+
+            // 大ボタン2分割
+            SizedBox(
+              height: 96,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _busy ? null : onWinTap,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                      child: const Text('勝 +1', style: TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _busy ? null : onLossTap,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Text('負 +1', style: TextStyle(fontSize: 18)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (_busy)
+              const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: LinearProgressIndicator(),
+              ),
           ],
         ),
       ),
