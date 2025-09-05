@@ -30,8 +30,8 @@ class _DailyPageState extends ConsumerState<DailyPage> {
   String get gameId => _gameIdCtl.text.trim();
   String get charId => _charIdCtl.text.trim();
   DateTime get day {
-    final cutoff = ref.read(cutoffHourProvider);
-    return truncateWithCutoff(_date, cutoff);
+    final cutoffMin = ref.read(cutoffMinutesProvider);
+    return truncateWithCutoffMinutes(_date, cutoffMin);
   }
 
   @override

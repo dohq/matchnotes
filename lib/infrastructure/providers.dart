@@ -121,7 +121,8 @@ final importDailyRecordsCsvUsecaseProvider =
 // Persistent Settings Keys
 const _kPrefThemeMode = 'settings.themeMode'; // system|light|dark
 const _kPrefKeepScreenOn = 'settings.keepScreenOn'; // bool
-const _kPrefCutoffHour = 'settings.cutoffHour'; // int 0-23
+const _kPrefCutoffHour = 'settings.cutoffHour'; // legacy: int 0-23
+const _kPrefCutoffMinutes = 'settings.cutoffMinutes'; // int 0-1439
 
 String _themeModeToString(ThemeMode m) {
   switch (m) {
@@ -194,28 +195,45 @@ final keepScreenOnProvider =
       return KeepScreenOnController();
     });
 
-// Cutoff hour controller (0-23). Default 0.
-class CutoffHourController extends StateNotifier<int> {
-  CutoffHourController() : super(0) {
+// Cutoff time controller (total minutes, 0-1439). Default 0.
+class CutoffTimeController extends StateNotifier<int> {
+  CutoffTimeController() : super(0) {
     _load();
   }
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final v = prefs.getInt(_kPrefCutoffHour);
-    if (v != null && v >= 0 && v <= 23 && v != state) state = v;
+    // New key takes precedence
+    final mv = prefs.getInt(_kPrefCutoffMinutes);
+    if (mv != null && mv >= 0 && mv < 24 * 60) {
+      if (mv != state) state = mv;
+      return;
+    }
+    // Backward compatibility: migrate from legacy hour key if present
+    final hv = prefs.getInt(_kPrefCutoffHour);
+    if (hv != null && hv >= 0 && hv <= 23) {
+      final minutes = hv * 60;
+      state = minutes;
+      await prefs.setInt(_kPrefCutoffMinutes, minutes);
+    }
   }
 
-  Future<void> setHour(int h) async {
-    final clamped = h.clamp(0, 23);
+  Future<void> setMinutes(int totalMinutes) async {
+    final clamped = totalMinutes.clamp(0, (24 * 60) - 1);
     state = clamped;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kPrefCutoffHour, clamped);
+    await prefs.setInt(_kPrefCutoffMinutes, clamped);
+  }
+
+  Future<void> setHourMinute({required int hour, required int minute}) async {
+    hour = hour.clamp(0, 23);
+    minute = minute.clamp(0, 59);
+    await setMinutes(hour * 60 + minute);
   }
 }
 
-final cutoffHourProvider = StateNotifierProvider<CutoffHourController, int>((
+final cutoffMinutesProvider = StateNotifierProvider<CutoffTimeController, int>((
   ref,
 ) {
-  return CutoffHourController();
+  return CutoffTimeController();
 });
