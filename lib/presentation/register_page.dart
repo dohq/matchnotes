@@ -199,7 +199,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (_history.length > 50) {
       _history.removeRange(50, _history.length);
     }
-    if (mounted) setState(() {});
+    // no setState here; caller batches updates
   }
 
   @override
@@ -298,8 +298,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     Future<void> onWinTap() async {
       if (_busyWin) return;
       HapticFeedback.lightImpact();
-      _pushHistory(_TapEvent(kind: TapKind.win, at: DateTime.now()));
-      setState(() => _busyWin = true);
+      final now = DateTime.now();
+      setState(() {
+        _pushHistory(_TapEvent(kind: TapKind.win, at: now));
+        _busyWin = true;
+      });
       await _incWin();
       if (mounted) setState(() => _busyWin = false);
     }
@@ -307,8 +310,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     Future<void> onLossTap() async {
       if (_busyLoss) return;
       HapticFeedback.lightImpact();
-      _pushHistory(_TapEvent(kind: TapKind.loss, at: DateTime.now()));
-      setState(() => _busyLoss = true);
+      final now = DateTime.now();
+      setState(() {
+        _pushHistory(_TapEvent(kind: TapKind.loss, at: now));
+        _busyLoss = true;
+      });
       await _incLoss();
       if (mounted) setState(() => _busyLoss = false);
     }
