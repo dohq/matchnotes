@@ -41,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -67,9 +67,18 @@ class AppDatabase extends _$AppDatabase {
         // Create Characters table for existing users upgrading to v4
         await m.createTable(characters);
       }
+      // v5 indexes are created in beforeOpen using customStatement
     },
     beforeOpen: (details) async {
-      // Place for PRAGMA or seeding if needed
+      // Create helpful indexes for fresh installs and upgrades
+      if (details.wasCreated || (details.versionBefore ?? 0) < 5) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_dcr_yyyymmdd ON daily_character_records (yyyymmdd)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_dcr_game_day ON daily_character_records (game_id, yyyymmdd)',
+        );
+      }
     },
   );
 

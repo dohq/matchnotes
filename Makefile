@@ -8,8 +8,9 @@ COVERAGE_LCOV=$(COVERAGE_DIR)/lcov.info
 COVERAGE_HTML_DIR=$(COVERAGE_DIR)/html
 EMULATOR_AVD?=Pixel_8a_API_34
 ADB?=adb
+ANDROID_DEVICE?=
 
-.PHONY: format lint test coverage coverage-html emulator-start emulator-stop install-hooks hooks build
+.PHONY: format lint test coverage coverage-html emulator-start emulator-stop android-run install-hooks hooks build
 
 format:
 	$(DART) format .
@@ -55,3 +56,22 @@ hooks/.stamp:
 
 install-hooks: hooks/.stamp
 	@echo "Git hooks installed (pre-commit)" 
+
+# Run app on Android (emulator preferred; falls back to any connected device)
+android-run:
+	@set -e; \
+	EMUS=`$(ADB) devices | awk 'NR>1 && $$2=="device" && $$1 ~ /^emulator-/ {print $$1}'`; \
+	if [ -z "$$EMUS" ]; then \
+		bash scripts/emulator_start.sh $(EMULATOR_AVD); \
+	fi; \
+	# If a specific ANDROID_DEVICE is provided, use it; otherwise pick the first connected
+	if [ -n "$(ANDROID_DEVICE)" ]; then \
+		DEV=$(ANDROID_DEVICE); \
+	else \
+		DEV=`$(ADB) devices | awk 'NR>1 && $$2=="device" {print $$1}' | head -n1`; \
+	fi; \
+	if [ -z "$$DEV" ]; then \
+		echo "No Android device/emulator available" >&2; exit 1; \
+	fi; \
+	echo "Running on $$DEV"; \
+	$(FLUTTER) run -d $$DEV
