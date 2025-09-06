@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import '../domain/date_utils.dart';
 
+import '../domain/date_utils.dart';
 import '../domain/entities.dart' as domain;
 import '../infrastructure/providers.dart';
 import 'memo_page.dart';
@@ -323,7 +323,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         notificationPredicate: (_) => false,
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -334,13 +334,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 df.format(day),
                 style:
                     Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                     ) ??
                     const TextStyle(fontSize: 34, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 6),
             // ゲーム名/キャラ名（中央・横幅の約2/3に合わせて拡大縮小）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),

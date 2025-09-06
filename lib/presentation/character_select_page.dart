@@ -46,7 +46,7 @@ class CharacterSelectPage extends ConsumerWidget {
                   }
                   return ListView.separated(
                     itemCount: list.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, index2) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final c = list[index];
                       return ListTile(
