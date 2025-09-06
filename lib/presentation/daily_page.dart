@@ -13,8 +13,9 @@ class DailyPage extends ConsumerStatefulWidget {
 }
 
 class _DailyPageState extends ConsumerState<DailyPage> {
-  final _gameIdCtl = TextEditingController(text: 'demo-game');
-  final _charIdCtl = TextEditingController(text: 'char-1');
+  // 既定値は空にし、ユーザー入力/Refreshで明示的に読み込む
+  final _gameIdCtl = TextEditingController();
+  final _charIdCtl = TextEditingController();
   DateTime _date = DateTime.now();
 
   int _wins = 0;
