@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +25,10 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
+  // Tap history and elapsed time ticker
+  final List<_TapEvent> _history = <_TapEvent>[]; // latest first
+  DateTime? _lastTapAt;
+  Timer? _ticker;
   final DateTime _date = DateTime.now();
   int _wins = 0;
   int _losses = 0;
@@ -60,6 +66,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _undo.clear();
     });
     _refresh();
+    // 10秒ごとに経過時間表示を更新
+    _ticker = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted) return;
+      if (_lastTapAt != null) {
+        setState(() {}); // re-render elapsed text
+      }
+    });
   }
 
   @override
@@ -178,12 +191,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
+  void _pushHistory(_TapEvent e) {
+    _lastTapAt = e.at;
+    _history.insert(0, e);
+    if (_history.length > 50) {
+      _history.removeRange(50, _history.length);
+    }
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     // ページ離脱時は必ず wakelock を解除する
     // ignore: discarded_futures
     WakelockPlus.disable();
     _memoScroll.dispose();
+    _ticker?.cancel();
     super.dispose();
   }
 
@@ -273,12 +296,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     Future<void> onWinTap() async {
       if (_busy) return;
       HapticFeedback.lightImpact();
+      _pushHistory(_TapEvent(kind: TapKind.win, at: DateTime.now()));
       await _incWin();
     }
 
     Future<void> onLossTap() async {
       if (_busy) return;
       HapticFeedback.lightImpact();
+      _pushHistory(_TapEvent(kind: TapKind.loss, at: DateTime.now()));
       await _incLoss();
     }
 
@@ -461,7 +486,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     child: needsScroll
                         ? Scrollbar(
                             controller: _memoScroll,
-                            thumbVisibility: true,
+                            // 常時表示はしない（スクロール中のみ表示）
+                            thumbVisibility: false,
                             child: SingleChildScrollView(
                               controller: _memoScroll,
                               child: Text(
@@ -559,8 +585,77 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 padding: EdgeInsets.only(top: 16),
                 child: LinearProgressIndicator(),
               ),
+
+            const SizedBox(height: 8),
+            // Bottom small history line
+            _TapHistoryBar(history: _history, lastTapAt: _lastTapAt),
           ],
         ),
+      ),
+    );
+  }
+}
+
+enum TapKind { win, loss }
+
+class _TapEvent {
+  final TapKind kind;
+  final DateTime at;
+  _TapEvent({required this.kind, required this.at});
+}
+
+class _TapHistoryBar extends StatelessWidget {
+  final List<_TapEvent> history;
+  final DateTime? lastTapAt;
+  const _TapHistoryBar({required this.history, required this.lastTapAt});
+
+  String _elapsedText() {
+    if (lastTapAt == null) return '未登録';
+    final diff = DateTime.now().difference(lastTapAt!);
+    final s = diff.inSeconds;
+    if (s < 60) return '$s秒前';
+    final m = diff.inMinutes;
+    if (m < 60) return '$m分前';
+    final h = diff.inHours;
+    return '$h時間前';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final cs = theme.colorScheme;
+    // 右が最新になるように並べる（最新を右端に）
+    final recent = history.take(10).toList().reversed.toList();
+    final icons = <Widget>[
+      for (final e in recent)
+        Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: Icon(
+            Icons.circle,
+            size: 10,
+            color: e.kind == TapKind.win
+                ? cs.primaryContainer
+                : cs.errorContainer,
+          ),
+        ),
+    ];
+    return DefaultTextStyle(
+      style: (textTheme.bodySmall ?? const TextStyle()).copyWith(
+        color: cs.onSurfaceVariant,
+      ),
+      child: Row(
+        children: [
+          // 履歴（左に古い、右に新しい）
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: icons,
+            ),
+          ),
+          // 右端に経過時間
+          Text('最後に登録してから: ${_elapsedText()}'),
+        ],
       ),
     );
   }
