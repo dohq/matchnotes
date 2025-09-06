@@ -62,6 +62,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // 入力（Game/Character）→ Refresh
+      await tester.enterText(find.byType(TextField).at(0), 'demo-game');
+      await tester.enterText(find.byType(TextField).at(1), 'char-1');
+      await tester.tap(find.text('Refresh'));
+      await tester.pumpAndSettle();
+
       // Summary 表示（1勝2敗 -> 0.33）
       expect(find.textContaining('Summary: wins=1, losses=2'), findsOneWidget);
 
