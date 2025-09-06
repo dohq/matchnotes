@@ -191,7 +191,7 @@ class _TodaySummaryCard extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: items.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, index2) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final row = items[index];
                   final total = row.wins + row.losses;

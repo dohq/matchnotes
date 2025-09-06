@@ -23,7 +23,7 @@ class GameSelectPage extends ConsumerWidget {
           }
           return ListView.separated(
             itemCount: games.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, index2) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final g = games[index];
               return ListTile(
