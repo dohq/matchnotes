@@ -33,6 +33,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   int _wins = 0;
   int _losses = 0;
   bool _busy = false;
+  bool _busyWin = false;
+  bool _busyLoss = false;
   final _undo = <Future<void> Function()>[]; // simple undo stack
   String? _memo;
   // メモ欄スクロール用
@@ -294,17 +296,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final wrText = '${wrPercent.toStringAsFixed(1)}%';
 
     Future<void> onWinTap() async {
-      if (_busy) return;
+      if (_busyWin) return;
       HapticFeedback.lightImpact();
       _pushHistory(_TapEvent(kind: TapKind.win, at: DateTime.now()));
+      setState(() => _busyWin = true);
       await _incWin();
+      if (mounted) setState(() => _busyWin = false);
     }
 
     Future<void> onLossTap() async {
-      if (_busy) return;
+      if (_busyLoss) return;
       HapticFeedback.lightImpact();
       _pushHistory(_TapEvent(kind: TapKind.loss, at: DateTime.now()));
+      setState(() => _busyLoss = true);
       await _incLoss();
+      if (mounted) setState(() => _busyLoss = false);
     }
 
     Future<void> onUndoTap() async {
@@ -346,6 +352,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         surfaceTintColor: Colors.transparent,
         // メモ欄スクロール時に色が変わるのを防ぐ
         notificationPredicate: (_) => false,
+        actions: [
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -486,8 +503,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     child: needsScroll
                         ? Scrollbar(
                             controller: _memoScroll,
-                            // 常時表示はしない（スクロール中のみ表示）
-                            thumbVisibility: false,
+                            thumbVisibility: true,
                             child: SingleChildScrollView(
                               controller: _memoScroll,
                               child: Text(
@@ -551,7 +567,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 children: [
                   Expanded(
                     child: FilledButton(
-                      onPressed: _busy ? null : onWinTap,
+                      onPressed: _busyWin ? null : onWinTap,
                       style: winButtonStyle(context),
                       child: const Text(
                         '勝 +1',
@@ -565,7 +581,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: _busy ? null : onLossTap,
+                      onPressed: _busyLoss ? null : onLossTap,
                       style: lossButtonStyle(context),
                       child: const Text(
                         '負 +1',
@@ -579,14 +595,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ],
               ),
             ),
-
-            if (_busy)
-              const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: LinearProgressIndicator(),
-              ),
-
-            const SizedBox(height: 8),
             // Bottom small history line
             _TapHistoryBar(history: _history, lastTapAt: _lastTapAt),
           ],
@@ -632,8 +640,8 @@ class _TapHistoryBar extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(right: 6),
           child: Icon(
-            Icons.circle,
-            size: 10,
+            Icons.square_rounded,
+            size: 16,
             color: e.kind == TapKind.win
                 ? cs.primaryContainer
                 : cs.errorContainer,
@@ -654,7 +662,7 @@ class _TapHistoryBar extends StatelessWidget {
             ),
           ),
           // 右端に経過時間
-          Text('最後に登録してから: ${_elapsedText()}'),
+          Text('最終登録: ${_elapsedText()}'),
         ],
       ),
     );
