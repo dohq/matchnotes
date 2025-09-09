@@ -31,6 +31,7 @@ make build
 - `make emulator-start` … Android Emulator 起動（AVD: `Pixel_8a_API_34`）
 - `make emulator-stop` … Emulator 停止
 - `make install-hooks` … Git pre-commit フック導入（format+lintを強制）
+- `make android-run` … 接続中の端末/エミュレータで起動（必要なら自動で Emulator 起動）
 
 ヒント: `EMULATOR_AVD` 環境変数で AVD を上書き可能
 
@@ -48,22 +49,28 @@ sudo apt-get update && sudo apt-get install -y lcov
 
 ## アーキテクチャ概要（drift/DI）
 
-- **ドメイン層**: `lib/domain/` にエンティティ・ユースケース・リポジトリIFを定義。
-- **インフラ層（drift）**:
+- ドメイン層: `lib/domain/` にエンティティ・ユースケース・リポジトリIFを定義。
+- インフラ層（drift）:
   - スキーマ/DAO: `lib/infrastructure/db/app_database.dart`
-    - テーブル: `DailyCharacterRecords`（主キー: `gameId`,`characterId`,`yyyymmdd`）
-    - DataClass: `DailyCharacterRecordRow`（ドメインと衝突回避）
-    - DAOヘルパ: `fetchRecord` / `fetchByGameAndDay` / `upsertRecord`
+    - テーブル: `DailyCharacterRecords`（主キー: `gameId`,`characterId`,`yyyymmdd`）/ `Games` / `Characters`
+    - DataClass: `DailyCharacterRecordRow` ほか
+    - DAOヘルパ: `fetchRecord` / `fetchByGameAndDay` / `upsertRecord` など
   - DBオープン: `lib/infrastructure/db/open.dart`（`openAppDatabase()`）
   - リポジトリ実装: `lib/infrastructure/repositories/daily_character_record_repository_drift.dart`
     - ドメインIF `DailyCharacterRecordRepository` の drift 実装
-    - `DateTime` ⇄ `yyyymmdd(int)` を相互変換
-- **DI（Riverpod）**: `lib/infrastructure/providers.dart`
-  - `appDatabaseProvider`（Async）
-  - `dailyCharacterRecordRepositoryProvider`（Async）
-  - ユースケース用プロバイダ（`AddWin`/`AddLoss`/`GetDailyGameSummary`/`CopyMemoFromPreviousDay`）
-- **UI（DailyPage）**: `lib/presentation/daily_page.dart`（`main.dart` から起動）
-  - ゲーム/キャラ/日付の指定、勝敗加算、メモ編集、前日メモコピー、日次サマリ表示
+    - `DateTime` ⇄ `yyyymmdd(int)` の相互変換
+- DI（Riverpod）: `lib/infrastructure/providers.dart`
+  - `appDatabaseProvider`（Async）/ `dailyCharacterRecordRepositoryProvider`（Async）
+  - ユースケース用: `AddWin` / `AddLoss` / `GetDailyGameSummary` / `CopyMemoFromPreviousDay` / `GetMonthlyWinRatesPerGame` / `ExportDailyRecordsCsv` / `ImportDailyRecordsCsv`
+  - 設定: `themeModeProvider` / `keepScreenOnProvider` / `cutoffMinutesProvider`
+- UI: `lib/presentation/`
+  - `top_page.dart` … トップ（今日のサマリ・直近7日・月次勝率チャート）
+  - `game_select_page.dart` … ゲーム管理/選択
+  - `character_select_page.dart` … キャラ管理/選択
+  - `register_page.dart` … 勝/負の登録、Undo、メモ起動
+  - `memo_page.dart` … メモ編集（前日からのコピー可）
+  - `settings_page.dart` … テーマ/画面常時ON/日付切替時刻
+  - 軸ラベル補助: `x_axis_labels.dart`
 
 ## テスト
 
@@ -80,11 +87,15 @@ make test
 
 ## 参考
 
- - Flutter: https://docs.flutter.dev/
- - go_router: https://pub.dev/packages/go_router
- - riverpod: https://pub.dev/packages/flutter_riverpod
- - drift: https://drift.simonbinder.eu/
- - table_calendar: https://pub.dev/packages/table_calendar
+- Flutter: https://docs.flutter.dev/
+- Riverpod: https://pub.dev/packages/flutter_riverpod
+- drift: https://drift.simonbinder.eu/
+- Syncfusion Charts: https://pub.dev/packages/syncfusion_flutter_charts
+- CSV: https://pub.dev/packages/csv
+- file_picker: https://pub.dev/packages/file_picker
+- media_store_plus (Android): https://pub.dev/packages/media_store_plus
+- wakelock_plus: https://pub.dev/packages/wakelock_plus
+- shared_preferences: https://pub.dev/packages/shared_preferences
 
 ### DBマイグレーションドキュメント
 
@@ -98,10 +109,14 @@ make test
 
 ### CSVインポート（アプリ設定 > データのインポート）
 
-- 期待ヘッダ（1行目・固定）: `game_id,character_id,yyyymmdd,wins,losses`
+- 受け付けるヘッダ（1行目）
+  - レガシー: `game_id,character_id,yyyymmdd,wins,losses`
+  - 拡張: `game_id,character_id,game_name,character_name,yyyymmdd,wins,losses`
 - 改行コード: LF 推奨
 - メモ欄は対象外（CSVには含めない）
-- CSV内に存在しない `game_id` は自動的に `Games` マスタへ登録されます（`name` は `game_id` と同一で初期化）
+- 未登録IDの扱い:
+  - 未登録の `game_id` は `Games` に自動登録（拡張CSVの `game_name` があればそれを名称に利用、なければ `game_id`）。
+  - 未登録の `character_id` も `Characters` に自動登録（拡張CSVの `character_name` があれば利用、なければ `character_id`）。
 
 検証ルール:
 
@@ -117,9 +132,10 @@ make test
 
 ### CSVエクスポート（アプリ設定 > データのエクスポート）
 
-- 共有の公開 `Downloads` フォルダ直下に CSV を出力します。
-  - Desktop（Windows/macOS/Linux）: 各OSの Downloads ディレクトリ
-  - Android: 公開ストレージの `Download` ディレクトリ直下（MediaStore 経由 / `media_store_plus` 使用。Android 10+ 対応）
+- 共有の公開 `Downloads` フォルダ（または各OSの相当箇所）に CSV を保存します。
+  - Desktop（Windows/macOS/Linux）: `Downloads/MatchNotes/matchnotes_backup.csv`
+  - Android: `Downloads/MatchNotes/matchnotes_backup.csv`（MediaStore 経由・Android 10+）
+  - iOS: アプリ専用 `Documents/MatchNotes/matchnotes_backup.csv`
 
 ## アプリ設定
 
@@ -138,6 +154,11 @@ make test
   - 実装: `wakelock_plus` を使用（`WakelockPlus.enable/disable`）
   - プロバイダ: `keepScreenOnProvider`（`StateNotifierProvider`）
   - 保存キー: `settings.keepScreenOn`（`bool`）
+
+- 日付の切り替わり時刻（カットオフ）
+  - 指定時刻までは前日扱いにします（例: 01:30 なら 01:29 まで前日）。
+  - プロバイダ: `cutoffMinutesProvider`（分で保持 0–1439）。
+  - 旧キー `settings.cutoffHour` は自動移行されます。
 
 ## ゲーム/キャラクター管理
 
