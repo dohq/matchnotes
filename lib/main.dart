@@ -16,10 +16,15 @@ void main() async {
   // Crashlytics 有効化フラグ（Release 以外は既定で無効）
   const allowCrash = bool.fromEnvironment('ENABLE_CRASH', defaultValue: true);
   final enableCrashlytics = kReleaseMode && allowCrash;
+  const smokeTest = bool.fromEnvironment(
+    'CRASHLYTICS_SMOKE_TEST',
+    defaultValue: false,
+  );
 
   await runWithCrashReporting(
     app: const ProviderScope(child: MyApp()),
     enableCrashlytics: enableCrashlytics,
+    smokeTest: smokeTest,
   );
 }
 
