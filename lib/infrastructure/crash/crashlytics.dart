@@ -69,11 +69,19 @@ class CrashReporter {
 Future<void> runWithCrashReporting({
   required Widget app,
   required bool enableCrashlytics,
+  bool smokeTest = false,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final reporter = CrashReporter(enableCrashlytics);
   await reporter.init();
+  if (smokeTest) {
+    // 起動時に一度だけ非致命エラーを送信して配線を検証
+    reporter.recordNonFatal(
+      StateError('crashlytics_smoke_test'),
+      StackTrace.current,
+    );
+  }
 
   // ゾーンの最終ガード（Flutter 外例外）
   await runZonedGuarded(
