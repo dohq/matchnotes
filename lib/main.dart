@@ -3,6 +3,8 @@ import 'package:media_store_plus/media_store_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/presentation/top_page.dart';
+import 'package:matchnotes/infrastructure/crash/crashlytics.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,7 +12,15 @@ void main() async {
   await MediaStore.ensureInitialized();
   // MediaStore 側でアプリ既定のフォルダ名を設定（Downloads 直下でも要求される場合がある）
   MediaStore.appFolder = 'MatchNotes';
-  runApp(const ProviderScope(child: MyApp()));
+
+  // Crashlytics 有効化フラグ（Release 以外は既定で無効）
+  const allowCrash = bool.fromEnvironment('ENABLE_CRASH', defaultValue: true);
+  final enableCrashlytics = kReleaseMode && allowCrash;
+
+  await runWithCrashReporting(
+    app: const ProviderScope(child: MyApp()),
+    enableCrashlytics: enableCrashlytics,
+  );
 }
 
 class MyApp extends ConsumerWidget {
