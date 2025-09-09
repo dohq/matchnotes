@@ -54,11 +54,6 @@ class AppDatabase extends _$AppDatabase {
     },
     onUpgrade: (m, from, to) async {
       // v2: No structural changes.
-      // Example for future changes:
-      // if (from < 2) {
-      //   await m.addColumn(dailyCharacterRecords, dailyCharacterRecords.memo);
-      //   await m.createIndex(Index('idx_daily_game_day', [...]));
-      // }
       if (from < 3) {
         // Create Games table for existing users upgrading to v3
         await m.createTable(games);
