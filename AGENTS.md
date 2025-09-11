@@ -31,7 +31,13 @@ make install-hooks              # pre-commit 導入（format+analyze を強制�
 - drift のE2Eは `NativeDatabase.memory()` を利用し実DB相当の動作を検証。
 
 ## Commit & Pull Request Guidelines
-- コミット規約: Conventional Commits を推奨（例: `feat: ...`, `fix: ...`, `docs: ...`, `ui: ...`, `db: ...`）。必要に応じて `scope` を使用。
+- コミット規約（必須）: コミットメッセージは必ず「Conventional Commits」フォーマットに準拠してください。
+  - 形式: `<type>(<scope>): <subject>`（`scope` は任意）
+  - 主な `type`: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+  - 例: `feat(presentation): 試合一覧にフィルタを追加` / `fix(db): 移行スクリプトのnull処理を修正`
+  - Breaking変更は本文またはフッターに `BREAKING CHANGE:` を付記
+  - 1行目は簡潔（~50文字目安）、末尾の句読点は不要。必要に応じ本文/フッターで詳細・Issue連携（`Closes #123` など）
+  - すべてのコミットは GPG 署名必須（`git commit -S`）。
 - PR: 目的・背景・変更点を簡潔に。関連Issueをリンク。UI変更はスクリーンショット添付。テスト/ドキュメントの更新を含める。
 - Git hooks: `make install-hooks` で pre-commit を導入（format/analyze が通らない場合はコミット中断）。
 - DB変更時は `docs/db_migration.md` を更新。
