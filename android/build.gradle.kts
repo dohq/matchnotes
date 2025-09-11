@@ -5,6 +5,19 @@ allprojects {
     }
 }
 
+// Google Services / Crashlytics Gradle plugins（Kotlin DSL）
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // バージョンは Gradle に解決させます（Flutter 推奨の互換範囲内）
+        classpath("com.google.gms:google-services:+")
+        classpath("com.google.firebase:firebase-crashlytics-gradle:+")
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

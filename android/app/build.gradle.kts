@@ -5,6 +5,10 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Firebase Google Services / Crashlytics プラグイン
+apply(plugin = "com.google.gms.google-services")
+apply(plugin = "com.google.firebase.crashlytics")
+
 android {
     namespace = "dev.dohq.matchnotes"
     compileSdk = flutter.compileSdkVersion
@@ -35,6 +39,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Crashlytics でマッピングアップロードを有効化
+            // （firebase_crashlytics が依存を解決し、プラグインが自動で upload します）
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }
