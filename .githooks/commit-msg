@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Conventional Commits のフォーマットを検査します。
+# 許可typeはAGENTS.mdに合わせて必要最小限＋一般的なものを含みます。
+
+MSG_FILE="$1"
+
+# 1行目（先頭の空行/コメントを除外）を抽出
+first_line() {
+  awk 'BEGIN{FS="\n"} {print} ' "$MSG_FILE" \
+    | awk 'NF && $0 !~ /^#/ {print; exit}'
+}
+
+SUBJECT="$(first_line || true)"
+
+# 何も書かれていないコミットは拒否
+if [[ -z "${SUBJECT}" ]]; then
+  echo "[commit-msg] エラー: コミットメッセージが空です" >&2
+  exit 1
+fi
+
+# 許可される type 一覧（必要に応じてAGENTS.mdと共に更新）
+TYPES="build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|ui|db"
+
+# 形式: <type>(<scope>)?: <subject>
+# 末尾の ! は任意（BREAKING変更の明示）。
+CC_REGEX="^(((${TYPES})(\\([a-zA-Z0-9_.-]+\\))?)(!)?:) [^ ].+"
+
+# 本文に BREAKING CHANGE: が含まれる場合は、subject に ! が無くても許容
+if grep -qE '^BREAKING CHANGE:' "$MSG_FILE" 2>/dev/null; then
+  CC_RELAXED_REGEX="^(((${TYPES})(\\([a-zA-Z0-9_.-]+\\))?):) [^ ].+"
+  if [[ "$SUBJECT" =~ $CC_RELAXED_REGEX ]]; then
+    exit 0
+  fi
+fi
+
+if [[ "$SUBJECT" =~ $CC_REGEX ]]; then
+  exit 0
+fi
+
+cat >&2 <<'ERR'
+[commit-msg] エラー: Conventional Commits 形式に準拠していません。
+  形式: <type>(<scope>): <subject>
+  例   :
+    - feat(presentation): 試合一覧にフィルタを追加
+    - fix(db): 移行スクリプトのnull処理を修正
+    - docs: Crashlyticsガイドを更新
+    - chore(ci): lintワークフローを高速化
+
+  主なtype: feat, fix, docs, refactor, perf, test, build, ci, chore, revert, style, ui, db
+  BREAKING変更は subject の ! または本文に `BREAKING CHANGE:` を付記してください。
+
+詳細は AGENTS.md の「Commit & Pull Request Guidelines」を参照してください。
+ERR
+exit 1
+
