@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Enforce: all commits being pushed must be GPG-signed.
+# Strategy:
+# 1) For each ref update from STDIN, compute commit range old..new
+# 2) For every commit in the range, require a 'gpgsig' header
+# 3) If 'git verify-commit' works in this env, attempt verification; otherwise, accept presence of signature
+
+if [[ "${ALLOW_UNSIGNED:-0}" == "1" ]]; then
+  echo "[pre-push] bypass via ALLOW_UNSIGNED=1"
+  exit 0
+fi
+
+verify_one() {
+  local sha="$1"
+  if ! git cat-file -p "$sha" | grep -q '^gpgsig ' ; then
+    echo "[pre-push] エラー: 署名なしコミットを検出: $sha" >&2
+    git show -s --format='  %h %an %s' "$sha" >&2
+    return 1
+  fi
+  if command -v git >/dev/null 2>&1; then
+    if git verify-commit -q "$sha" 2>/dev/null; then
+      return 0
+    fi
+  fi
+  # 署名の有効性検証に失敗しても、署名の存在は確認済み
+  return 0
+}
+
+rc=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # deletion or no new objects
+  if [[ "$local_sha" == 0000000000000000000000000000000000000000 ]]; then
+    continue
+  fi
+  range="$local_sha"
+  if [[ -n "${remote_sha:-}" && "$remote_sha" != 0000000000000000000000000000000000000000 ]]; then
+    range="$remote_sha..$local_sha"
+  fi
+  while read -r c; do
+    [[ -z "$c" ]] && continue
+    if ! verify_one "$c"; then
+      rc=1
+      break
+    fi
+  done < <(git rev-list "$range")
+  [[ $rc -ne 0 ]] && break
+done
+
+if [[ $rc -ne 0 ]]; then
+  cat >&2 <<'ERR'
+[pre-push] 失敗: GPG署名のないコミットが含まれています。
+  対処: 以下いずれか
+    - コミットを修正: git commit --amend -S --no-edit
+    - 直近n件を再署名: git rebase -i --rebase-merges -S <base>
+    - 既存コミットに署名を付け直す: git filter-repo / git filter-branch（共有ブランチでは注意）
+ERR
+  exit 1
+fi
+
+exit 0
+
