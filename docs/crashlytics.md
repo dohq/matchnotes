@@ -11,7 +11,7 @@
 
 ## 2) 依存とビルド設定
 - 依存（済）: `pubspec.yaml` に `firebase_core` / `firebase_crashlytics`
-- Android ルート: `android/build.gradle.kts` に Google Services / Crashlytics Gradle Plugin の classpath を追加（本ブランチで済）
+- Android ルート: `android/build.gradle.kts` に Google Services / Crashlytics Gradle Plugin の classpath を追加
 - Android アプリ: `android/app/build.gradle.kts` でプラグイン適用（`com.google.gms.google-services`, `com.google.firebase.crashlytics`）。Release で `minifyEnabled true` / `shrinkResources true` を有効化（本ブランチで済）
 - iOS: 依存解決（CocoaPods）
 
