@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:matchnotes/infrastructure/logging/logger.dart';
 
 part 'app_database.g.dart';
 
@@ -97,24 +98,33 @@ class AppDatabase extends _$AppDatabase {
       )
       ..limit(1);
     final row = await q.getSingleOrNull();
+    logDb.fine('fetchRecord game=$gameId char=$characterId day=${day.toIso8601String()} hit=${row != null}');
     return row;
   }
 
   // Characters DAO helpers
   Future<List<CharacterRow>> fetchAllCharacters() async {
     final q = select(characters)..orderBy([(t) => OrderingTerm.asc(t.name)]);
-    return q.get();
+    final rows = await q.get();
+    logDb.finer('fetchAllCharacters count=${rows.length}');
+    return rows;
   }
 
   Future<List<CharacterRow>> fetchCharactersByGame(String gameId) async {
     final q = select(characters)
       ..where((t) => t.gameId.equals(gameId))
       ..orderBy([(t) => OrderingTerm.asc(t.name)]);
-    return q.get();
+    final rows = await q.get();
+    logDb.fine('fetchCharactersByGame game=$gameId count=${rows.length}');
+    return rows;
   }
 
   Future<void> upsertCharacter(Insertable<CharacterRow> row) async {
     await into(characters).insertOnConflictUpdate(row);
+    try {
+      final c = row as CharactersCompanion;
+      logDb.info('upsertCharacter id=${c.id.present ? c.id.value : '(n/a)'} game=${c.gameId.present ? c.gameId.value : '(n/a)'}');
+    } catch (_) {}
   }
 
   Future<List<DailyCharacterRecordRow>> fetchByGameAndDay({
@@ -124,12 +134,18 @@ class AppDatabase extends _$AppDatabase {
     final key = toYyyymmdd(day);
     final q = select(dailyCharacterRecords)
       ..where((t) => t.gameId.equals(gameId) & t.yyyymmdd.equals(key));
-    return q.get();
+    final rows = await q.get();
+    logDb.fine('fetchByGameAndDay game=$gameId day=${day.toIso8601String()} count=${rows.length}');
+    return rows;
   }
 
   Future<void> upsertRecord(Insertable<DailyCharacterRecordRow> row) async {
     // まず通常の UPSERT を実行
     await into(dailyCharacterRecords).insertOnConflictUpdate(row);
+    try {
+      final c = row as DailyCharacterRecordsCompanion;
+      logDb.info('upsertRecord game=${c.gameId.present ? c.gameId.value : '(n/a)'} char=${c.characterId.present ? c.characterId.value : '(n/a)'} day=${c.yyyymmdd.present ? c.yyyymmdd.value : -1}');
+    } catch (_) {}
     // Drift の insertOnConflictUpdate は通常 nullable フィールドにも反映されるが、
     // 念のため memo を明示更新して "null への上書き" を確実にする。
     try {
@@ -159,11 +175,17 @@ class AppDatabase extends _$AppDatabase {
   // Games DAO helpers
   Future<List<GameRow>> fetchAllGames() async {
     final q = select(games)..orderBy([(t) => OrderingTerm.asc(t.name)]);
-    return q.get();
+    final rows = await q.get();
+    logDb.finer('fetchAllGames count=${rows.length}');
+    return rows;
   }
 
   Future<void> upsertGame(Insertable<GameRow> row) async {
     await into(games).insertOnConflictUpdate(row);
+    try {
+      final g = row as GamesCompanion;
+      logDb.info('upsertGame id=${g.id.present ? g.id.value : '(n/a)'}');
+    } catch (_) {}
   }
 
   Stream<List<GameRow>> watchAllGames() {
@@ -175,10 +197,12 @@ class AppDatabase extends _$AppDatabase {
     await (update(
       games,
     )..where((t) => t.id.equals(id))).write(GamesCompanion(name: Value(name)));
+    logDb.info('renameGame id=$id');
   }
 
   Future<void> deleteGameAndRecords(String id) async {
     await transaction(() async {
+      logDb.warning('deleteGameAndRecords id=$id (and related records)');
       await (delete(
         dailyCharacterRecords,
       )..where((t) => t.gameId.equals(id))).go();
@@ -193,6 +217,7 @@ class AppDatabase extends _$AppDatabase {
     await (update(characters)..where((t) => t.id.equals(id))).write(
       CharactersCompanion(name: Value(name)),
     );
+    logDb.info('renameCharacter id=$id');
   }
 
   Future<void> deleteCharacterAndRecords({
@@ -200,6 +225,7 @@ class AppDatabase extends _$AppDatabase {
     required String characterId,
   }) async {
     await transaction(() async {
+      logDb.warning('deleteCharacterAndRecords game=$gameId char=$characterId');
       await (delete(dailyCharacterRecords)..where(
             (t) => t.gameId.equals(gameId) & t.characterId.equals(characterId),
           ))
@@ -217,7 +243,9 @@ class AppDatabase extends _$AppDatabase {
     final e = toYyyymmdd(end);
     final q = select(dailyCharacterRecords)
       ..where((t) => t.yyyymmdd.isBetweenValues(s, e));
-    return q.get();
+    final rows = await q.get();
+    logDb.fine('fetchByRange start=$s end=$e count=${rows.length}');
+    return rows;
   }
 
   // Stream version for reactive UI updates

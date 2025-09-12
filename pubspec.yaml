@@ -23,6 +23,7 @@ dependencies:
   wakelock_plus: ^1.2.5
   shared_preferences: ^2.3.2
   media_store_plus: ^0.1.3
+  logging: ^1.2.0
   # Firebase core and Crashlytics (version will be resolved by pub)
   firebase_core:
   firebase_crashlytics:

@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:matchnotes/presentation/top_page.dart';
 import 'package:matchnotes/infrastructure/crash/crashlytics.dart';
+import 'package:matchnotes/infrastructure/logging/logger.dart';
 import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // ログ初期化（Releaseでは既定で無効。--dart-defineで制御可能）
+  configureLogging();
   // Android の MediaStore を利用するための初期化（1回のみ）
   await MediaStore.ensureInitialized();
   // MediaStore 側でアプリ既定のフォルダ名を設定（Downloads 直下でも要求される場合がある）

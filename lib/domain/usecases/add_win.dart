@@ -1,5 +1,6 @@
 import '../entities.dart';
 import '../repositories.dart';
+import 'package:matchnotes/infrastructure/logging/logger.dart';
 
 class AddWinUsecase {
   final DailyCharacterRecordRepository repo;
@@ -25,9 +26,11 @@ class AddWinUsecase {
         memo: null,
       );
       await repo.upsert(created);
+      logUsecase.info('addWin new game=$gameId char=$characterId day=${day.toIso8601String()}');
     } else {
       final updated = existing.copyWith(wins: existing.wins + 1);
       await repo.upsert(updated);
+      logUsecase.info('addWin update game=$gameId char=$characterId day=${day.toIso8601String()} wins=${updated.wins}');
     }
   }
 }
