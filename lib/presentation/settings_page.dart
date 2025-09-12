@@ -58,6 +58,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             value: keepOn,
             onChanged: (v) => keepCtl.setKeepOn(v),
           ),
+          // Haptics toggle
+          Builder(
+            builder: (context) {
+              final haptics = ref.watch(hapticsOnTapProvider);
+              final hCtl = ref.read(hapticsOnTapProvider.notifier);
+              return SwitchListTile(
+                title: const Text('勝敗ボタンのタップ時にバイブレーション'),
+                value: haptics,
+                onChanged: (v) => hCtl.setEnabled(v),
+              );
+            },
+          ),
           const Divider(height: 0),
           // 日付切替時刻（カットオフ）
           Builder(

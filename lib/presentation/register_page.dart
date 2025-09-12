@@ -297,6 +297,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (game == null || character == null) {
       return const Scaffold(body: Center(child: Text('データが見つかりません')));
     }
+    // 設定: タップ時バイブレーション
+    final hapticsOnTap = ref.watch(hapticsOnTapProvider);
     final gameName = game.name;
     final charName = character.name;
     final df = DateFormat('yyyy-MM-dd');
@@ -306,7 +308,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     Future<void> onWinTap() async {
       if (_busyWin) return;
-      HapticFeedback.lightImpact();
+      if (hapticsOnTap) {
+        HapticFeedback.lightImpact();
+      }
       final now = DateTime.now();
       setState(() {
         _pushHistory(_TapEvent(kind: TapKind.win, at: now));
@@ -318,7 +322,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     Future<void> onLossTap() async {
       if (_busyLoss) return;
-      HapticFeedback.lightImpact();
+      if (hapticsOnTap) {
+        HapticFeedback.lightImpact();
+      }
       final now = DateTime.now();
       setState(() {
         _pushHistory(_TapEvent(kind: TapKind.loss, at: now));
