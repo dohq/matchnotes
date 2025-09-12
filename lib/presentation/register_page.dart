@@ -187,6 +187,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       // 取り消し後も最新にする
       ref.invalidate(getMonthlyWinRatesPerGameUsecaseProvider);
       ref.invalidate(dailyCharacterRecordRepositoryProvider);
+      // 直近のタップ履歴も1件戻す（最新は index 0）
+      setState(() {
+        if (_history.isNotEmpty) {
+          _history.removeAt(0);
+          _lastTapAt = _history.isNotEmpty ? _history.first.at : null;
+        } else {
+          _lastTapAt = null;
+        }
+      });
       await _refresh();
     } finally {
       if (mounted) setState(() => _busy = false);
