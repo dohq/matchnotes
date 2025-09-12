@@ -124,6 +124,7 @@ const _kPrefThemeMode = 'settings.themeMode'; // system|light|dark
 const _kPrefKeepScreenOn = 'settings.keepScreenOn'; // bool
 const _kPrefCutoffHour = 'settings.cutoffHour'; // legacy: int 0-23
 const _kPrefCutoffMinutes = 'settings.cutoffMinutes'; // int 0-1439
+const _kPrefHapticsOnTap = 'settings.hapticsOnTap'; // bool
 
 String _themeModeToString(ThemeMode m) {
   switch (m) {
@@ -194,6 +195,31 @@ class KeepScreenOnController extends StateNotifier<bool> {
 final keepScreenOnProvider =
     StateNotifierProvider<KeepScreenOnController, bool>((ref) {
       return KeepScreenOnController();
+    });
+
+// Haptic feedback on win/loss tap (default: true)
+class HapticsOnTapController extends StateNotifier<bool> {
+  HapticsOnTapController() : super(true) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    // default true if not set
+    final v = prefs.getBool(_kPrefHapticsOnTap);
+    if (v != null && v != state) state = v;
+  }
+
+  Future<void> setEnabled(bool v) async {
+    state = v;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kPrefHapticsOnTap, v);
+  }
+}
+
+final hapticsOnTapProvider =
+    StateNotifierProvider<HapticsOnTapController, bool>((ref) {
+      return HapticsOnTapController();
     });
 
 // Cutoff time controller (total minutes, 0-1439). Default 0.
