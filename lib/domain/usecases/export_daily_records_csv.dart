@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:matchnotes/domain/repositories.dart';
 import 'package:matchnotes/infrastructure/db/app_database.dart';
+import 'package:matchnotes/infrastructure/logging/logger.dart';
 
 class ExportDailyRecordsCsvUsecase {
   final DailyCharacterRecordRepository repo;
@@ -22,6 +23,7 @@ class ExportDailyRecordsCsvUsecase {
     final s = start ?? DateTime(1970, 1, 1);
     final e = end ?? DateTime(2100, 12, 31);
     final rows = await repo.findByRange(start: s, end: e);
+    logCsv.info('export CSV start range=${_yyyymmddOf(s)}..${_yyyymmddOf(e)} rows=${rows.length}');
     Map<String, String> gameName = const {};
     Map<String, String> charName = const {};
     if (db != null) {
@@ -80,6 +82,7 @@ class ExportDailyRecordsCsvUsecase {
     final fileName = 'matchnotes_export_${_yyyymmddOf(DateTime.now())}.csv';
     final file = File('${targetDir.path}/$fileName');
     await file.writeAsString(csv);
+    logCsv.info('export CSV done path=${file.path} bytes=${csv.length}');
     return file;
   }
 

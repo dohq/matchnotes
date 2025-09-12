@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:matchnotes/domain/repositories.dart';
 import 'package:matchnotes/domain/entities.dart';
 import 'package:matchnotes/infrastructure/db/app_database.dart';
+import 'package:matchnotes/infrastructure/logging/logger.dart';
 
 class ImportDailyRecordsCsvUsecase {
   final DailyCharacterRecordRepository repo;
@@ -25,8 +26,10 @@ class ImportDailyRecordsCsvUsecase {
   /// Detailed report version for UI: imported/skipped and errors with line numbers.
   Future<ImportResult> executeWithReport({required File file}) async {
     final content = await file.readAsString();
+    logCsv.info('import CSV start path=${file.path} size=${content.length}');
     final rows = const CsvToListConverter(eol: '\n').convert(content);
     if (rows.isEmpty) {
+      logCsv.warning('import CSV: empty file');
       return ImportResult(imported: 0, skipped: 0, errors: const []);
     }
 
@@ -49,6 +52,7 @@ class ImportDailyRecordsCsvUsecase {
         header[3] == 'wins' &&
         header[4] == 'losses';
     if (!isExtended && !isLegacy) {
+      logCsv.severe('import CSV: header mismatch');
       throw FormatException('CSV header mismatch');
     }
 
@@ -137,7 +141,9 @@ class ImportDailyRecordsCsvUsecase {
       await repo.upsert(record);
       imported++;
     }
-    return ImportResult(imported: imported, skipped: skipped, errors: errors);
+    final result = ImportResult(imported: imported, skipped: skipped, errors: errors);
+    logCsv.info('import CSV done imported=${result.imported} skipped=${result.skipped} errors=${result.errors.length}');
+    return result;
   }
 
   DateTime? _safeDateFromYyyymmdd(int v) {

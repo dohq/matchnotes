@@ -1,5 +1,6 @@
 import '../entities.dart';
 import '../repositories.dart';
+import 'package:matchnotes/infrastructure/logging/logger.dart';
 
 class AddLossUsecase {
   final DailyCharacterRecordRepository repo;
@@ -25,9 +26,11 @@ class AddLossUsecase {
         memo: null,
       );
       await repo.upsert(created);
+      logUsecase.info('addLoss new game=$gameId char=$characterId day=${day.toIso8601String()}');
     } else {
       final updated = existing.copyWith(losses: existing.losses + 1);
       await repo.upsert(updated);
+      logUsecase.info('addLoss update game=$gameId char=$characterId day=${day.toIso8601String()} losses=${updated.losses}');
     }
   }
 }
