@@ -141,8 +141,14 @@ class ImportDailyRecordsCsvUsecase {
       await repo.upsert(record);
       imported++;
     }
-    final result = ImportResult(imported: imported, skipped: skipped, errors: errors);
-    logCsv.info('import CSV done imported=${result.imported} skipped=${result.skipped} errors=${result.errors.length}');
+    final result = ImportResult(
+      imported: imported,
+      skipped: skipped,
+      errors: errors,
+    );
+    logCsv.info(
+      'import CSV done imported=${result.imported} skipped=${result.skipped} errors=${result.errors.length}',
+    );
     return result;
   }
 

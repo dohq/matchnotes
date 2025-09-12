@@ -11,7 +11,8 @@ import '../logging/logger.dart';
 Future<AppDatabase> openAppDatabase({bool? logStatements}) async {
   final dbPath = await _resolveDbPath();
   // DBのSQLログはRelease既定オフ。--dart-define=DB_LOG_SQL=true で有効化可能。
-  final sqlLogFlag = logStatements ??
+  final sqlLogFlag =
+      logStatements ??
       const bool.fromEnvironment('DB_LOG_SQL', defaultValue: false);
   final enableSqlLog = !kReleaseMode && sqlLogFlag; // Releaseでは常に無効
 

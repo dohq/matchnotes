@@ -8,10 +8,9 @@ final logUsecase = Logger('usecase');
 
 void configureLogging({Level? level, bool? enable}) {
   // Releaseでは常に無効。envや引数での強制有効化は不可。
-  final enabledFlag = enable ?? const bool.fromEnvironment(
-    'ENABLE_LOG',
-    defaultValue: !kReleaseMode,
-  );
+  final enabledFlag =
+      enable ??
+      const bool.fromEnvironment('ENABLE_LOG', defaultValue: !kReleaseMode);
   final enabled = !kReleaseMode && enabledFlag;
   if (!enabled) {
     Logger.root.level = Level.OFF;
