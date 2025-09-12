@@ -23,7 +23,9 @@ class ExportDailyRecordsCsvUsecase {
     final s = start ?? DateTime(1970, 1, 1);
     final e = end ?? DateTime(2100, 12, 31);
     final rows = await repo.findByRange(start: s, end: e);
-    logCsv.info('export CSV start range=${_yyyymmddOf(s)}..${_yyyymmddOf(e)} rows=${rows.length}');
+    logCsv.info(
+      'export CSV start range=${_yyyymmddOf(s)}..${_yyyymmddOf(e)} rows=${rows.length}',
+    );
     Map<String, String> gameName = const {};
     Map<String, String> charName = const {};
     if (db != null) {

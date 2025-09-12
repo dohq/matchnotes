@@ -98,7 +98,9 @@ class AppDatabase extends _$AppDatabase {
       )
       ..limit(1);
     final row = await q.getSingleOrNull();
-    logDb.fine('fetchRecord game=$gameId char=$characterId day=${day.toIso8601String()} hit=${row != null}');
+    logDb.fine(
+      'fetchRecord game=$gameId char=$characterId day=${day.toIso8601String()} hit=${row != null}',
+    );
     return row;
   }
 
@@ -123,7 +125,9 @@ class AppDatabase extends _$AppDatabase {
     await into(characters).insertOnConflictUpdate(row);
     try {
       final c = row as CharactersCompanion;
-      logDb.info('upsertCharacter id=${c.id.present ? c.id.value : '(n/a)'} game=${c.gameId.present ? c.gameId.value : '(n/a)'}');
+      logDb.info(
+        'upsertCharacter id=${c.id.present ? c.id.value : '(n/a)'} game=${c.gameId.present ? c.gameId.value : '(n/a)'}',
+      );
     } catch (_) {}
   }
 
@@ -135,7 +139,9 @@ class AppDatabase extends _$AppDatabase {
     final q = select(dailyCharacterRecords)
       ..where((t) => t.gameId.equals(gameId) & t.yyyymmdd.equals(key));
     final rows = await q.get();
-    logDb.fine('fetchByGameAndDay game=$gameId day=${day.toIso8601String()} count=${rows.length}');
+    logDb.fine(
+      'fetchByGameAndDay game=$gameId day=${day.toIso8601String()} count=${rows.length}',
+    );
     return rows;
   }
 
@@ -144,7 +150,9 @@ class AppDatabase extends _$AppDatabase {
     await into(dailyCharacterRecords).insertOnConflictUpdate(row);
     try {
       final c = row as DailyCharacterRecordsCompanion;
-      logDb.info('upsertRecord game=${c.gameId.present ? c.gameId.value : '(n/a)'} char=${c.characterId.present ? c.characterId.value : '(n/a)'} day=${c.yyyymmdd.present ? c.yyyymmdd.value : -1}');
+      logDb.info(
+        'upsertRecord game=${c.gameId.present ? c.gameId.value : '(n/a)'} char=${c.characterId.present ? c.characterId.value : '(n/a)'} day=${c.yyyymmdd.present ? c.yyyymmdd.value : -1}',
+      );
     } catch (_) {}
     // Drift の insertOnConflictUpdate は通常 nullable フィールドにも反映されるが、
     // 念のため memo を明示更新して "null への上書き" を確実にする。

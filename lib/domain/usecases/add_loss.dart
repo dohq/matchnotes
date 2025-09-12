@@ -26,11 +26,15 @@ class AddLossUsecase {
         memo: null,
       );
       await repo.upsert(created);
-      logUsecase.info('addLoss new game=$gameId char=$characterId day=${day.toIso8601String()}');
+      logUsecase.info(
+        'addLoss new game=$gameId char=$characterId day=${day.toIso8601String()}',
+      );
     } else {
       final updated = existing.copyWith(losses: existing.losses + 1);
       await repo.upsert(updated);
-      logUsecase.info('addLoss update game=$gameId char=$characterId day=${day.toIso8601String()} losses=${updated.losses}');
+      logUsecase.info(
+        'addLoss update game=$gameId char=$characterId day=${day.toIso8601String()} losses=${updated.losses}',
+      );
     }
   }
 }

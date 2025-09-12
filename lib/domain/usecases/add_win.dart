@@ -26,11 +26,15 @@ class AddWinUsecase {
         memo: null,
       );
       await repo.upsert(created);
-      logUsecase.info('addWin new game=$gameId char=$characterId day=${day.toIso8601String()}');
+      logUsecase.info(
+        'addWin new game=$gameId char=$characterId day=${day.toIso8601String()}',
+      );
     } else {
       final updated = existing.copyWith(wins: existing.wins + 1);
       await repo.upsert(updated);
-      logUsecase.info('addWin update game=$gameId char=$characterId day=${day.toIso8601String()} wins=${updated.wins}');
+      logUsecase.info(
+        'addWin update game=$gameId char=$characterId day=${day.toIso8601String()} wins=${updated.wins}',
+      );
     }
   }
 }
