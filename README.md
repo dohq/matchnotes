@@ -1,5 +1,9 @@
 # MatchNotes
 
+[![Coverage](docs/coverage.svg)](https://github.com/dohq/matchnotes/actions/workflows/flutter-ci.yml)
+[![Code to Test Ratio](docs/code_to_test_ratio.svg)](https://github.com/dohq/matchnotes/actions/workflows/flutter-ci.yml)
+[![Test Execution Time](docs/test_execution_time.svg)](https://github.com/dohq/matchnotes/actions/workflows/flutter-ci.yml)
+
  Android向け・ローカルSQLiteベースの「勝敗記録アプリ」。
 
 ## 開発手順
