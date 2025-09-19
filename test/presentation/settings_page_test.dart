@@ -28,7 +28,7 @@ void main() {
       expect(prefs1.getString('settings.themeMode'), anyOf('dark', null));
 
       // 画面常時ON のトグル
-      final keepSwitch = find.byType(SwitchListTile);
+      final keepSwitch = find.byKey(keepScreenOnSwitchKey);
       expect(keepSwitch, findsOneWidget);
       await tester.tap(keepSwitch);
       await tester.pumpAndSettle();
@@ -43,6 +43,26 @@ void main() {
       await tester.pumpAndSettle();
       // SnackBar が表示される
       expect(find.byType(SnackBar), findsOneWidget);
+    });
+
+    testWidgets('ハプティクス設定のトグル', (tester) async {
+      SharedPreferences.setMockInitialValues({'settings.hapticsOnTap': false});
+
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: SettingsPage())),
+      );
+      await tester.pumpAndSettle();
+
+      final hapticsSwitch = find.byKey(hapticsSwitchKey);
+      expect(hapticsSwitch, findsOneWidget);
+      expect(tester.widget<SwitchListTile>(hapticsSwitch).value, isFalse);
+
+      await tester.tap(hapticsSwitch);
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('settings.hapticsOnTap'), isTrue);
+      expect(tester.widget<SwitchListTile>(hapticsSwitch).value, isTrue);
     });
   });
 }

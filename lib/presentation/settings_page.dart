@@ -7,6 +7,9 @@ import 'package:matchnotes/infrastructure/providers.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
+const keepScreenOnSwitchKey = ValueKey('settings.keepScreenOnSwitch');
+const hapticsSwitchKey = ValueKey('settings.hapticsSwitch');
+
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
@@ -54,6 +57,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
           ),
           SwitchListTile(
+            key: keepScreenOnSwitchKey,
             title: const Text('勝敗登録ページで画面ロック防止'),
             value: keepOn,
             onChanged: (v) => keepCtl.setKeepOn(v),
@@ -64,6 +68,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               final haptics = ref.watch(hapticsOnTapProvider);
               final hCtl = ref.read(hapticsOnTapProvider.notifier);
               return SwitchListTile(
+                key: hapticsSwitchKey,
                 title: const Text('勝敗ボタンのタップ時にバイブレーション'),
                 value: haptics,
                 onChanged: (v) => hCtl.setEnabled(v),
