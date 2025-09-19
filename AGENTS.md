@@ -31,6 +31,7 @@ make install-hooks              # pre-commit 導入（format+analyze を強制�
 - drift のE2Eは `NativeDatabase.memory()` を利用し実DB相当の動作を検証。
 
 ## Commit & Pull Request Guidelines
+- 作業開始前に、機能追加や修正ごとに必ず新しいブランチを作成し、そのブランチ上で変更を行ってください。
 - コミット規約（必須）: コミットメッセージは必ず「Conventional Commits」フォーマットに準拠してください。
   - 形式: `<type>(<scope>): <subject>`（`scope` は任意）
   - 主な `type`: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
