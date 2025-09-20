@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
@@ -12,8 +13,8 @@ class ExportDailyRecordsCsvUsecase {
 
   /// Exports records in [start..end] (inclusive) to CSV.
   /// Columns:
-  /// - when db != null: game_id,character_id,game_name,character_name,yyyymmdd,wins,losses
-  /// - when db == null: game_id,character_id,yyyymmdd,wins,losses (legacy)
+  /// - when db != null: game_id,character_id,game_name,character_name,yyyymmdd,wins,losses,memo_b64
+  /// - when db == null: game_id,character_id,yyyymmdd,wins,losses,memo_b64 (legacy)
   /// Returns the written file.
   Future<File> execute({
     DateTime? start,
@@ -55,8 +56,12 @@ class ExportDailyRecordsCsvUsecase {
         'yyyymmdd',
         'wins',
         'losses',
+        'memo_b64',
       ]);
       for (final r in rows) {
+        final memoB64 = r.memo == null
+            ? ''
+            : base64Encode(utf8.encode(r.memo!));
         output.add([
           r.id.gameId,
           r.id.characterId,
@@ -65,17 +70,29 @@ class ExportDailyRecordsCsvUsecase {
           _yyyymmddOf(r.id.date),
           r.wins,
           r.losses,
+          memoB64,
         ]);
       }
     } else {
-      output.add(['game_id', 'character_id', 'yyyymmdd', 'wins', 'losses']);
+      output.add([
+        'game_id',
+        'character_id',
+        'yyyymmdd',
+        'wins',
+        'losses',
+        'memo_b64',
+      ]);
       for (final r in rows) {
+        final memoB64 = r.memo == null
+            ? ''
+            : base64Encode(utf8.encode(r.memo!));
         output.add([
           r.id.gameId,
           r.id.characterId,
           _yyyymmddOf(r.id.date),
           r.wins,
           r.losses,
+          memoB64,
         ]);
       }
     }

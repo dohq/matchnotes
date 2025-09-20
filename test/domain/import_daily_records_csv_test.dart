@@ -66,9 +66,9 @@ void main() {
         final usecase = ImportDailyRecordsCsvUsecase(repo, db);
 
         final csv = [
-          'game_id,character_id,game_name,character_name,yyyymmdd,wins,losses',
-          'g1,c1,Game Alpha,Char One,20240201,3,1',
-          'g3,c3,Game Gamma,Char Three,20240202,0,0',
+          'game_id,character_id,game_name,character_name,yyyymmdd,wins,losses,memo_b64',
+          'g1,c1,Game Alpha,Char One,20240201,3,1,TGluZSwgd2l0aCAicXVvdGUi',
+          'g3,c3,Game Gamma,Char Three,20240202,0,0,',
         ].join('\n');
 
         final dir = await Directory.systemTemp.createTemp(
@@ -95,13 +95,11 @@ void main() {
 
         final stored = repo.dump();
         expect(stored.length, 2);
-        expect(
-          stored.any(
-            (r) =>
-                r.id.gameId == 'g1' && r.id.characterId == 'c1' && r.wins == 3,
-          ),
-          isTrue,
+        final recG1 = stored.firstWhere(
+          (r) => r.id.gameId == 'g1' && r.id.characterId == 'c1',
         );
+        expect(recG1.wins, 3);
+        expect(recG1.memo, 'Line, with "quote"');
       },
     );
 
@@ -134,6 +132,29 @@ void main() {
       expect(report.errors, contains('line 4: yyyymmdd が不正な日付です'));
       expect(report.errors, contains('line 5: wins または losses が負の値です'));
       expect(report.errors, contains('line 6: 列数が不足しています'));
+      expect(repo.dump(), isEmpty);
+    });
+
+    test('invalid memo base64 is reported and skipped', () async {
+      final repo = FakeDailyCharacterRecordRepository();
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final usecase = ImportDailyRecordsCsvUsecase(repo, db);
+
+      final csv = [
+        'game_id,character_id,yyyymmdd,wins,losses,memo_b64',
+        'g1,c1,20250105,1,0,@@@',
+      ].join('\n');
+
+      final dir = await Directory.systemTemp.createTemp('import_csv_bad_memo');
+      addTearDown(() async => dir.delete(recursive: true));
+      final file = File('${dir.path}/bad.csv');
+      await file.writeAsString(csv);
+
+      final report = await usecase.executeWithReport(file: file);
+      expect(report.imported, 0);
+      expect(report.skipped, 1);
+      expect(report.errors, contains('line 2: memo_b64 のデコードに失敗しました'));
       expect(repo.dump(), isEmpty);
     });
   });

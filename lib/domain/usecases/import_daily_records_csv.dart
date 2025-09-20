@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
@@ -14,8 +15,8 @@ class ImportDailyRecordsCsvUsecase {
 
   /// Imports records from a CSV file.
   /// Expected header (two variants):
-  /// - legacy: game_id,character_id,yyyymmdd,wins,losses
-  /// - extended: game_id,character_id,game_name,character_name,yyyymmdd,wins,losses
+  /// - legacy: game_id,character_id,yyyymmdd,wins,losses[,memo_b64]
+  /// - extended: game_id,character_id,game_name,character_name,yyyymmdd,wins,losses[,memo_b64]
   /// Lines ending: LF assumed.
   /// Returns number of imported rows.
   Future<int> execute({required File file}) async {
@@ -34,7 +35,9 @@ class ImportDailyRecordsCsvUsecase {
     }
 
     // Validate header
-    final header = rows.first.map((e) => e.toString()).toList(growable: false);
+    final header = rows.first
+        .map((e) => e.toString().trim())
+        .toList(growable: false);
     final isExtended =
         header.length >= 7 &&
         header[0] == 'game_id' &&
@@ -56,6 +59,8 @@ class ImportDailyRecordsCsvUsecase {
       throw FormatException('CSV header mismatch');
     }
 
+    final memoIndex = header.indexOf('memo_b64');
+
     // cache known gameIds
     final known = <String>{for (final g in await db.fetchAllGames()) g.id};
 
@@ -73,9 +78,9 @@ class ImportDailyRecordsCsvUsecase {
       final characterId = r[1].toString().trim();
       final gameNameCsv = isExtended ? r[2].toString().trim() : null;
       final charNameCsv = isExtended ? r[3].toString().trim() : null;
-      final yyyymmdd = int.tryParse(r[isExtended ? 4 : 2].toString());
-      final wins = int.tryParse(r[isExtended ? 5 : 3].toString());
-      final losses = int.tryParse(r[isExtended ? 6 : 4].toString());
+      final yyyymmdd = int.tryParse(r[isExtended ? 4 : 2].toString().trim());
+      final wins = int.tryParse(r[isExtended ? 5 : 3].toString().trim());
+      final losses = int.tryParse(r[isExtended ? 6 : 4].toString().trim());
 
       if (gameId.isEmpty || characterId.isEmpty) {
         skipped++;
@@ -128,15 +133,40 @@ class ImportDailyRecordsCsvUsecase {
         );
       }
 
+      final id = DailyCharacterRecordId(
+        gameId: gameId,
+        characterId: characterId,
+        date: date,
+      );
+
+      String? memo;
+      var memoProvided = false;
+      if (memoIndex >= 0 && memoIndex < r.length) {
+        final rawMemo = r[memoIndex].toString().trim();
+        memoProvided = true;
+        if (rawMemo.isEmpty) {
+          memo = null;
+        } else {
+          try {
+            memo = utf8.decode(base64Decode(rawMemo));
+          } catch (_) {
+            skipped++;
+            errors.add('line ${i + 1}: memo_b64 のデコードに失敗しました');
+            continue;
+          }
+        }
+      }
+
+      final existing = await repo.findById(id);
+      if (!memoProvided && existing != null) {
+        memo = existing.memo;
+      }
+
       final record = DailyCharacterRecord(
-        id: DailyCharacterRecordId(
-          gameId: gameId,
-          characterId: characterId,
-          date: date,
-        ),
+        id: id,
         wins: wins,
         losses: losses,
-        memo: '', // CSVには含めない
+        memo: memo,
       );
       await repo.upsert(record);
       imported++;
