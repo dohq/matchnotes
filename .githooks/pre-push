@@ -14,6 +14,12 @@ fi
 
 verify_one() {
   local sha="$1"
+  local subject
+  subject=$(git show -s --format='%s' "$sha" || echo '')
+  if [[ "$subject" == *"[skip ci]"* ]]; then
+    echo "[pre-push] allow unsigned commit with [skip ci]: $sha"
+    return 0
+  fi
   if ! git cat-file -p "$sha" | grep -q '^gpgsig ' ; then
     echo "[pre-push] エラー: 署名なしコミットを検出: $sha" >&2
     git show -s --format='  %h %an %s' "$sha" >&2
@@ -60,4 +66,3 @@ ERR
 fi
 
 exit 0
-
