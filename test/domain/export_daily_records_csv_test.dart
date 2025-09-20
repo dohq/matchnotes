@@ -32,7 +32,7 @@ void main() {
           id: DailyCharacterRecordId(gameId: 'gA', characterId: 'c2', date: d2),
           wins: 2,
           losses: 3,
-          memo: 'm',
+          memo: 'Line, with "quote"',
         ),
       );
 
@@ -45,10 +45,10 @@ void main() {
       final lines = content.trim().split('\n');
       // header + 2 rows
       expect(lines.length, 3);
-      expect(lines.first, 'game_id,character_id,yyyymmdd,wins,losses');
+      expect(lines.first, 'game_id,character_id,yyyymmdd,wins,losses,memo_b64');
       // Sorted by gameId asc, then characterId asc, then date asc
-      expect(lines[1], 'gA,c2,20250101,2,3');
-      expect(lines[2], 'gB,c1,20250102,1,0');
+      expect(lines[1], 'gA,c2,20250101,2,3,TGluZSwgd2l0aCAicXVvdGUi');
+      expect(lines[2], 'gB,c1,20250102,1,0,');
     });
 
     test('writes extended csv with names when db is provided', () async {
@@ -94,10 +94,10 @@ void main() {
 
       expect(
         lines.first,
-        'game_id,character_id,game_name,character_name,yyyymmdd,wins,losses',
+        'game_id,character_id,game_name,character_name,yyyymmdd,wins,losses,memo_b64',
       );
-      expect(lines[1], 'g1,c1,Game A,Char A,20240101,5,4');
-      expect(lines[2], 'g2,c9,g2,c9,20240102,0,2');
+      expect(lines[1], 'g1,c1,Game A,Char A,20240101,5,4,');
+      expect(lines[2], 'g2,c9,g2,c9,20240102,0,2,');
     });
   });
 }
