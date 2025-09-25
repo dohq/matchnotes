@@ -48,6 +48,8 @@ bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
+const _memoSentinel = Object();
+
 class DailyCharacterRecord {
   final DailyCharacterRecordId id;
   final int wins;
@@ -60,12 +62,16 @@ class DailyCharacterRecord {
     this.memo,
   });
 
-  DailyCharacterRecord copyWith({int? wins, int? losses, String? memo}) {
+  DailyCharacterRecord copyWith({
+    int? wins,
+    int? losses,
+    Object? memo = _memoSentinel,
+  }) {
     return DailyCharacterRecord(
       id: id,
       wins: wins ?? this.wins,
       losses: losses ?? this.losses,
-      memo: memo ?? this.memo,
+      memo: identical(memo, _memoSentinel) ? this.memo : memo as String?,
     );
   }
 }
