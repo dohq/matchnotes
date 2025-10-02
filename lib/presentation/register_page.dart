@@ -35,6 +35,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _busy = false;
   bool _busyWin = false;
   bool _busyLoss = false;
+  int _totalHighlightSeed = 0;
+  int _winHighlightSeed = 0;
+  int _lossHighlightSeed = 0;
   final _undo = <Future<void> Function()>[]; // simple undo stack
   String? _memo;
   // メモ欄スクロール用
@@ -66,6 +69,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _losses = 0;
       _memo = null;
       _undo.clear();
+      _totalHighlightSeed = 0;
+      _winHighlightSeed = 0;
+      _lossHighlightSeed = 0;
     });
     _refresh();
     // 10秒ごとに経過時間表示を更新
@@ -88,6 +94,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _losses = 0;
         _memo = null;
         _undo.clear();
+        _totalHighlightSeed = 0;
+        _winHighlightSeed = 0;
+        _lossHighlightSeed = 0;
       });
       _refresh();
     }
@@ -106,10 +115,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           date: day,
         ),
       );
+      if (!mounted) return;
+      final newWins = rec?.wins ?? 0;
+      final newLosses = rec?.losses ?? 0;
+      final rawMemo = rec?.memo;
+      final prevWins = _wins;
+      final prevLosses = _losses;
+      final prevTotal = prevWins + prevLosses;
+      final newTotal = newWins + newLosses;
       setState(() {
-        _wins = rec?.wins ?? 0;
-        _losses = rec?.losses ?? 0;
-        final rawMemo = rec?.memo;
+        _wins = newWins;
+        _losses = newLosses;
+        if (newTotal != prevTotal) {
+          _totalHighlightSeed++;
+        }
+        if (newWins != prevWins) {
+          _winHighlightSeed++;
+        }
+        if (newLosses != prevLosses) {
+          _lossHighlightSeed++;
+        }
         // 空文字や空白のみは null として扱い、UI ではプレースホルダ表示
         _memo = (rawMemo == null || rawMemo.trim().isEmpty) ? null : rawMemo;
       });
@@ -243,24 +268,74 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       );
     }
 
-    Widget statTile({required String label, required String value}) {
+    Widget statTile({
+      required String label,
+      required String value,
+      required int highlightSeed,
+      required Color highlightColor,
+    }) {
       final textTheme = Theme.of(context).textTheme;
       final cs = Theme.of(context).colorScheme;
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-        ),
+      final baseColor = cs.surfaceContainerLow;
+      final effectiveHighlight = Color.alphaBlend(
+        highlightColor.withOpacity(0.35),
+        baseColor,
+      );
+      return TweenAnimationBuilder<double>(
+        key: ValueKey(highlightSeed),
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic,
+        builder: (context, progress, child) {
+          final background =
+              Color.lerp(effectiveHighlight, baseColor, progress) ?? baseColor;
+          final shadowStrength = 1 - progress;
+          final overlayOpacity = (0.18 * shadowStrength).clamp(0.0, 1.0);
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                if (shadowStrength > 0)
+                  BoxShadow(
+                    color: highlightColor.withOpacity(overlayOpacity.toDouble()),
+                    blurRadius: 16 * shadowStrength,
+                    spreadRadius: 1,
+                  ),
+              ],
+            ),
+            child: child,
+          );
+        },
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(label, style: textTheme.bodySmall),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                final curved = CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutBack,
+                );
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.9, end: 1).animate(curved),
+                    child: child,
+                  ),
+                );
+              },
+              child: Text(
+                value,
+                key: ValueKey(value),
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -305,6 +380,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final total = _wins + _losses;
     final wrPercent = total == 0 ? 0.0 : (_wins / total) * 100;
     final wrText = '${wrPercent.toStringAsFixed(1)}%';
+    final messenger = ScaffoldMessenger.of(context);
 
     Future<void> onWinTap() async {
       if (_busyWin) return;
@@ -317,6 +393,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _busyWin = true;
       });
       await _incWin();
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('勝ちを登録しました'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1500),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 148),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
       if (mounted) setState(() => _busyWin = false);
     }
 
@@ -331,6 +418,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _busyLoss = true;
       });
       await _incLoss();
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('負けを登録しました'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1500),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 148),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
       if (mounted) setState(() => _busyLoss = false);
     }
 
@@ -467,15 +565,27 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   child: statTile(
                     label: '合計',
                     value: (_wins + _losses).toString(),
+                    highlightSeed: _totalHighlightSeed,
+                    highlightColor: cs.secondaryContainer,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: statTile(label: '勝', value: _wins.toString()),
+                  child: statTile(
+                    label: '勝',
+                    value: _wins.toString(),
+                    highlightSeed: _winHighlightSeed,
+                    highlightColor: cs.primaryContainer,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: statTile(label: '負', value: _losses.toString()),
+                  child: statTile(
+                    label: '負',
+                    value: _losses.toString(),
+                    highlightSeed: _lossHighlightSeed,
+                    highlightColor: cs.errorContainer,
+                  ),
                 ),
               ],
             ),
