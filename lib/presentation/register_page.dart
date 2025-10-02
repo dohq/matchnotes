@@ -278,7 +278,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final cs = Theme.of(context).colorScheme;
       final baseColor = cs.surfaceContainerLow;
       final effectiveHighlight = Color.alphaBlend(
-        highlightColor.withOpacity(0.35),
+        highlightColor.withValues(alpha: 0.35),
         baseColor,
       );
       return TweenAnimationBuilder<double>(
@@ -299,7 +299,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               boxShadow: [
                 if (shadowStrength > 0)
                   BoxShadow(
-                    color: highlightColor.withOpacity(overlayOpacity.toDouble()),
+                    color: highlightColor.withValues(
+                      alpha: overlayOpacity.toDouble(),
+                    ),
                     blurRadius: 16 * shadowStrength,
                     spreadRadius: 1,
                   ),
@@ -381,6 +383,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final wrPercent = total == 0 ? 0.0 : (_wins / total) * 100;
     final wrText = '${wrPercent.toStringAsFixed(1)}%';
     final messenger = ScaffoldMessenger.of(context);
+    final cs = Theme.of(context).colorScheme;
 
     Future<void> onWinTap() async {
       if (_busyWin) return;
@@ -400,8 +403,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           content: const Text('勝ちを登録しました'),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(milliseconds: 1500),
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 148),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 220),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       if (mounted) setState(() => _busyWin = false);
@@ -425,8 +430,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           content: const Text('負けを登録しました'),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(milliseconds: 1500),
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 148),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 220),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       if (mounted) setState(() => _busyLoss = false);
