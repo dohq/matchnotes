@@ -24,7 +24,8 @@ class RegisterPage extends ConsumerStatefulWidget {
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends ConsumerState<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage>
+    with TickerProviderStateMixin {
   // Tap history and elapsed time ticker
   final List<_TapEvent> _history = <_TapEvent>[]; // latest first
   DateTime? _lastTapAt;
@@ -35,6 +36,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _busy = false;
   bool _busyWin = false;
   bool _busyLoss = false;
+  int _totalHighlightSeed = 0;
+  int _winHighlightSeed = 0;
+  int _lossHighlightSeed = 0;
+  OverlayEntry? _snackBarEntry;
+  AnimationController? _snackBarController;
+  Timer? _snackBarTimer;
   final _undo = <Future<void> Function()>[]; // simple undo stack
   String? _memo;
   // メモ欄スクロール用
@@ -66,6 +73,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _losses = 0;
       _memo = null;
       _undo.clear();
+      _totalHighlightSeed = 0;
+      _winHighlightSeed = 0;
+      _lossHighlightSeed = 0;
     });
     _refresh();
     // 10秒ごとに経過時間表示を更新
@@ -88,6 +98,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _losses = 0;
         _memo = null;
         _undo.clear();
+        _totalHighlightSeed = 0;
+        _winHighlightSeed = 0;
+        _lossHighlightSeed = 0;
       });
       _refresh();
     }
@@ -106,10 +119,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           date: day,
         ),
       );
+      if (!mounted) return;
+      final newWins = rec?.wins ?? 0;
+      final newLosses = rec?.losses ?? 0;
+      final rawMemo = rec?.memo;
+      final prevWins = _wins;
+      final prevLosses = _losses;
+      final prevTotal = prevWins + prevLosses;
+      final newTotal = newWins + newLosses;
       setState(() {
-        _wins = rec?.wins ?? 0;
-        _losses = rec?.losses ?? 0;
-        final rawMemo = rec?.memo;
+        _wins = newWins;
+        _losses = newLosses;
+        if (newTotal != prevTotal) {
+          _totalHighlightSeed++;
+        }
+        if (newWins != prevWins) {
+          _winHighlightSeed++;
+        }
+        if (newLosses != prevLosses) {
+          _lossHighlightSeed++;
+        }
         // 空文字や空白のみは null として扱い、UI ではプレースホルダ表示
         _memo = (rawMemo == null || rawMemo.trim().isEmpty) ? null : rawMemo;
       });
@@ -218,7 +247,107 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     WakelockPlus.disable();
     _memoScroll.dispose();
     _ticker?.cancel();
+    _snackBarTimer?.cancel();
+    _snackBarController?.dispose();
+    _snackBarEntry?.remove();
     super.dispose();
+  }
+
+  void _showSnackBarMessage(String message) {
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      return;
+    }
+    _snackBarTimer?.cancel();
+    _snackBarTimer = null;
+    _snackBarController?.stop();
+    _snackBarController?.dispose();
+    _snackBarController = null;
+    _snackBarEntry?.remove();
+    _snackBarEntry = null;
+
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+      reverseDuration: const Duration(milliseconds: 140),
+    );
+    final curved = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final snackTheme = theme.snackBarTheme;
+        final bgColor =
+            snackTheme.backgroundColor ?? theme.colorScheme.inverseSurface;
+        final textStyle =
+            snackTheme.contentTextStyle ??
+            theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onInverseSurface,
+            );
+        final shape =
+            snackTheme.shape ??
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
+        const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+
+        return Positioned.fill(
+          child: IgnorePointer(
+            ignoring: true,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 220),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: FadeTransition(
+                    opacity: curved,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.85, end: 1).animate(curved),
+                      child: Material(
+                        color: Colors.transparent,
+                        elevation: snackTheme.elevation ?? 6,
+                        shape: shape,
+                        child: Container(
+                          padding: padding,
+                          decoration: ShapeDecoration(
+                            color: bgColor,
+                            shape: shape,
+                          ),
+                          child: Text(message, style: textStyle),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    overlay.insert(entry);
+    controller.forward();
+
+    _snackBarEntry = entry;
+    _snackBarController = controller;
+    _snackBarTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (!mounted || _snackBarEntry != entry) {
+        return;
+      }
+      controller.reverse().whenCompleteOrCancel(() {
+        if (_snackBarEntry == entry) {
+          entry.remove();
+          _snackBarEntry = null;
+          _snackBarController?.dispose();
+          _snackBarController = null;
+          _snackBarTimer = null;
+        }
+      });
+    });
   }
 
   @override
@@ -243,24 +372,76 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       );
     }
 
-    Widget statTile({required String label, required String value}) {
+    Widget statTile({
+      required String label,
+      required String value,
+      required int highlightSeed,
+      required Color highlightColor,
+    }) {
       final textTheme = Theme.of(context).textTheme;
       final cs = Theme.of(context).colorScheme;
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-        ),
+      final baseColor = cs.surfaceContainerLow;
+      final effectiveHighlight = Color.alphaBlend(
+        highlightColor.withValues(alpha: 0.35),
+        baseColor,
+      );
+      return TweenAnimationBuilder<double>(
+        key: ValueKey(highlightSeed),
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic,
+        builder: (context, progress, child) {
+          final background =
+              Color.lerp(effectiveHighlight, baseColor, progress) ?? baseColor;
+          final shadowStrength = 1 - progress;
+          final overlayOpacity = (0.18 * shadowStrength).clamp(0.0, 1.0);
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                if (shadowStrength > 0)
+                  BoxShadow(
+                    color: highlightColor.withValues(
+                      alpha: overlayOpacity.toDouble(),
+                    ),
+                    blurRadius: 16 * shadowStrength,
+                    spreadRadius: 1,
+                  ),
+              ],
+            ),
+            child: child,
+          );
+        },
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(label, style: textTheme.bodySmall),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                final curved = CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutBack,
+                );
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.9, end: 1).animate(curved),
+                    child: child,
+                  ),
+                );
+              },
+              child: Text(
+                value,
+                key: ValueKey(value),
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -305,6 +486,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final total = _wins + _losses;
     final wrPercent = total == 0 ? 0.0 : (_wins / total) * 100;
     final wrText = '${wrPercent.toStringAsFixed(1)}%';
+    final cs = Theme.of(context).colorScheme;
 
     Future<void> onWinTap() async {
       if (_busyWin) return;
@@ -317,7 +499,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _busyWin = true;
       });
       await _incWin();
+      if (!mounted) return;
       if (mounted) setState(() => _busyWin = false);
+      _showSnackBarMessage('勝ちを登録しました');
     }
 
     Future<void> onLossTap() async {
@@ -331,7 +515,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _busyLoss = true;
       });
       await _incLoss();
+      if (!mounted) return;
       if (mounted) setState(() => _busyLoss = false);
+      _showSnackBarMessage('負けを登録しました');
     }
 
     Future<void> onUndoTap() async {
@@ -467,15 +653,27 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   child: statTile(
                     label: '合計',
                     value: (_wins + _losses).toString(),
+                    highlightSeed: _totalHighlightSeed,
+                    highlightColor: cs.secondaryContainer,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: statTile(label: '勝', value: _wins.toString()),
+                  child: statTile(
+                    label: '勝',
+                    value: _wins.toString(),
+                    highlightSeed: _winHighlightSeed,
+                    highlightColor: cs.primaryContainer,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: statTile(label: '負', value: _losses.toString()),
+                  child: statTile(
+                    label: '負',
+                    value: _losses.toString(),
+                    highlightSeed: _lossHighlightSeed,
+                    highlightColor: cs.errorContainer,
+                  ),
                 ),
               ],
             ),
