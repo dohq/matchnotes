@@ -24,7 +24,8 @@ class RegisterPage extends ConsumerStatefulWidget {
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends ConsumerState<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage>
+    with TickerProviderStateMixin {
   // Tap history and elapsed time ticker
   final List<_TapEvent> _history = <_TapEvent>[]; // latest first
   DateTime? _lastTapAt;
@@ -38,6 +39,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   int _totalHighlightSeed = 0;
   int _winHighlightSeed = 0;
   int _lossHighlightSeed = 0;
+  OverlayEntry? _snackBarEntry;
+  AnimationController? _snackBarController;
+  Timer? _snackBarTimer;
   final _undo = <Future<void> Function()>[]; // simple undo stack
   String? _memo;
   // メモ欄スクロール用
@@ -243,7 +247,107 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     WakelockPlus.disable();
     _memoScroll.dispose();
     _ticker?.cancel();
+    _snackBarTimer?.cancel();
+    _snackBarController?.dispose();
+    _snackBarEntry?.remove();
     super.dispose();
+  }
+
+  void _showSnackBarMessage(String message) {
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      return;
+    }
+    _snackBarTimer?.cancel();
+    _snackBarTimer = null;
+    _snackBarController?.stop();
+    _snackBarController?.dispose();
+    _snackBarController = null;
+    _snackBarEntry?.remove();
+    _snackBarEntry = null;
+
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+      reverseDuration: const Duration(milliseconds: 140),
+    );
+    final curved = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final snackTheme = theme.snackBarTheme;
+        final bgColor =
+            snackTheme.backgroundColor ?? theme.colorScheme.inverseSurface;
+        final textStyle =
+            snackTheme.contentTextStyle ??
+            theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onInverseSurface,
+            );
+        final shape =
+            snackTheme.shape ??
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
+        const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+
+        return Positioned.fill(
+          child: IgnorePointer(
+            ignoring: true,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 220),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: FadeTransition(
+                    opacity: curved,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.85, end: 1).animate(curved),
+                      child: Material(
+                        color: Colors.transparent,
+                        elevation: snackTheme.elevation ?? 6,
+                        shape: shape,
+                        child: Container(
+                          padding: padding,
+                          decoration: ShapeDecoration(
+                            color: bgColor,
+                            shape: shape,
+                          ),
+                          child: Text(message, style: textStyle),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    overlay.insert(entry);
+    controller.forward();
+
+    _snackBarEntry = entry;
+    _snackBarController = controller;
+    _snackBarTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (!mounted || _snackBarEntry != entry) {
+        return;
+      }
+      controller.reverse().whenCompleteOrCancel(() {
+        if (_snackBarEntry == entry) {
+          entry.remove();
+          _snackBarEntry = null;
+          _snackBarController?.dispose();
+          _snackBarController = null;
+          _snackBarTimer = null;
+        }
+      });
+    });
   }
 
   @override
@@ -382,7 +486,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final total = _wins + _losses;
     final wrPercent = total == 0 ? 0.0 : (_wins / total) * 100;
     final wrText = '${wrPercent.toStringAsFixed(1)}%';
-    final messenger = ScaffoldMessenger.of(context);
     final cs = Theme.of(context).colorScheme;
 
     Future<void> onWinTap() async {
@@ -397,19 +500,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       });
       await _incWin();
       if (!mounted) return;
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: const Text('勝ちを登録しました'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(milliseconds: 1500),
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 220),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
       if (mounted) setState(() => _busyWin = false);
+      _showSnackBarMessage('勝ちを登録しました');
     }
 
     Future<void> onLossTap() async {
@@ -424,19 +516,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       });
       await _incLoss();
       if (!mounted) return;
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: const Text('負けを登録しました'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(milliseconds: 1500),
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 220),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
       if (mounted) setState(() => _busyLoss = false);
+      _showSnackBarMessage('負けを登録しました');
     }
 
     Future<void> onUndoTap() async {
