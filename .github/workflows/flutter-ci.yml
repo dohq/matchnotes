@@ -11,7 +11,7 @@ on:
 jobs:
   build-test:
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -55,20 +55,10 @@ jobs:
           fi
 
       - name: Report coverage
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: k1LoW/octocov-action@v1
 
       - name: Clean coverage artifacts
         run: rm -rf coverage
-
-      - name: Restore badges on non-default branches
-        if: github.ref != 'refs/heads/master'
-        run: |
-          for badge in docs/coverage.svg docs/code_to_test_ratio.svg docs/test_execution_time.svg; do
-            if git ls-files --error-unmatch "$badge" >/dev/null 2>&1; then
-              git checkout -- "$badge"
-            fi
-          done
 
       - name: Verify no generated changes
         run: |
