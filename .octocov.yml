@@ -1,22 +1,16 @@
 coverage:
   paths:
     - coverage/lcov.info
-  badge:
-    path: docs/coverage.svg
 
 code_to_test_ratio:
   code:
     - lib
   test:
     - test
-  badge:
-    path: docs/code_to_test_ratio.svg
 
 test_execution_time:
   steps:
     - Run tests with coverage
-  badge:
-    path: docs/test_execution_time.svg
 
 summary:
   if: true
@@ -33,7 +27,3 @@ report:
   if: is_default_branch
   datastores:
     - artifact://${GITHUB_REPOSITORY}
-
-push:
-  if: is_default_branch
-  message: 'chore: update coverage badge by octocov [skip ci]'
