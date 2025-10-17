@@ -38,7 +38,7 @@ make install-hooks              # pre-commit 導入（format+analyze を強制�
   - 例: `feat(presentation): 試合一覧にフィルタを追加` / `fix(db): 移行スクリプトのnull処理を修正`
   - Breaking変更は本文またはフッターに `BREAKING CHANGE:` を付記
   - 1行目は簡潔（~50文字目安）、末尾の句読点は不要。必要に応じ本文/フッターで詳細・Issue連携（`Closes #123` など）
-  - すべてのコミットは GPG 署名必須（`git commit -S`）。
+  - コミットは原則 GPG 署名付き（`git commit -S`）。
 - PR: 目的・背景・変更点を簡潔に。関連Issueをリンク。UI変更はスクリーンショット添付。テスト/ドキュメントの更新を含める。
 - Git hooks: `make install-hooks` で pre-commit を導入（format/analyze が通らない場合はコミット中断）。
 - DB変更時は `docs/db_migration.md` を更新。
