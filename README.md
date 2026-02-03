@@ -2,6 +2,10 @@
 
  Android向け・ローカルSQLiteベースの「勝敗記録アプリ」。
 
+## スクリーンショット
+![TOP画面](./docs/Screenshot_20250906_025718.png)
+![勝敗カウント画面](./docs/Screenshot_20250906_025609.png)
+
 ## 開発手順
 
 前提: Flutter SDK, Android SDK, AVD （`Pixel_8a_API_34`）
