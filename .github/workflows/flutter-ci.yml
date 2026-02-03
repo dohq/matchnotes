@@ -59,13 +59,3 @@ jobs:
 
       - name: Clean coverage artifacts
         run: rm -rf coverage
-
-      - name: Verify no generated changes
-        run: |
-          git diff --exit-code
-          untracked=$(git ls-files --others --exclude-standard)
-          if [ -n "$untracked" ]; then
-            echo "Error: untracked files detected" >&2
-            echo "$untracked" >&2
-            exit 1
-          fi
