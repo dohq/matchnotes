@@ -45,6 +45,10 @@ android {
             isShrinkResources = true
         }
     }
+
+    lint {
+        checkReleaseBuilds = false
+    }
 }
 
 flutter {
