@@ -130,7 +130,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             onTap: () async {
               final messenger = ScaffoldMessenger.of(context);
               try {
-                final result = await FilePicker.platform.pickFiles(
+                final result = await FilePicker.pickFiles(
                   type: FileType.custom,
                   allowedExtensions: ['csv'],
                   dialogTitle: 'CSVファイルを選択',
