@@ -28,7 +28,7 @@ class ImportDailyRecordsCsvUsecase {
   Future<ImportResult> executeWithReport({required File file}) async {
     final content = await file.readAsString();
     logCsv.info('import CSV start path=${file.path} size=${content.length}');
-    final rows = const CsvToListConverter(eol: '\n').convert(content);
+    final rows = csv.decode(content);
     if (rows.isEmpty) {
       logCsv.warning('import CSV: empty file');
       return ImportResult(imported: 0, skipped: 0, errors: const []);
