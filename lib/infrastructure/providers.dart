@@ -149,9 +149,11 @@ ThemeMode _themeModeFromString(String? s) {
   }
 }
 
-class ThemeModeController extends StateNotifier<ThemeMode> {
-  ThemeModeController() : super(ThemeMode.system) {
+class ThemeModeController extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() {
     _load();
+    return ThemeMode.system;
   }
 
   Future<void> _load() async {
@@ -168,15 +170,15 @@ class ThemeModeController extends StateNotifier<ThemeMode> {
   }
 }
 
-final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
-  (ref) {
-    return ThemeModeController();
-  },
+final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
+  ThemeModeController.new,
 );
 
-class KeepScreenOnController extends StateNotifier<bool> {
-  KeepScreenOnController() : super(false) {
+class KeepScreenOnController extends Notifier<bool> {
+  @override
+  bool build() {
     _load();
+    return false;
   }
 
   Future<void> _load() async {
@@ -192,15 +194,16 @@ class KeepScreenOnController extends StateNotifier<bool> {
   }
 }
 
-final keepScreenOnProvider =
-    StateNotifierProvider<KeepScreenOnController, bool>((ref) {
-      return KeepScreenOnController();
-    });
+final keepScreenOnProvider = NotifierProvider<KeepScreenOnController, bool>(
+  KeepScreenOnController.new,
+);
 
 // Haptic feedback on win/loss tap (default: true)
-class HapticsOnTapController extends StateNotifier<bool> {
-  HapticsOnTapController() : super(true) {
+class HapticsOnTapController extends Notifier<bool> {
+  @override
+  bool build() {
     _load();
+    return true;
   }
 
   Future<void> _load() async {
@@ -217,15 +220,16 @@ class HapticsOnTapController extends StateNotifier<bool> {
   }
 }
 
-final hapticsOnTapProvider =
-    StateNotifierProvider<HapticsOnTapController, bool>((ref) {
-      return HapticsOnTapController();
-    });
+final hapticsOnTapProvider = NotifierProvider<HapticsOnTapController, bool>(
+  HapticsOnTapController.new,
+);
 
 // Cutoff time controller (total minutes, 0-1439). Default 0.
-class CutoffTimeController extends StateNotifier<int> {
-  CutoffTimeController() : super(0) {
+class CutoffTimeController extends Notifier<int> {
+  @override
+  int build() {
     _load();
+    return 0;
   }
 
   Future<void> _load() async {
@@ -259,8 +263,6 @@ class CutoffTimeController extends StateNotifier<int> {
   }
 }
 
-final cutoffMinutesProvider = StateNotifierProvider<CutoffTimeController, int>((
-  ref,
-) {
-  return CutoffTimeController();
-});
+final cutoffMinutesProvider = NotifierProvider<CutoffTimeController, int>(
+  CutoffTimeController.new,
+);

@@ -97,11 +97,11 @@ class ExportDailyRecordsCsvUsecase {
       }
     }
 
-    final csv = const ListToCsvConverter(eol: '\n').convert(output);
+    final encoded = const CsvEncoder(lineDelimiter: '\n').convert(output);
     final fileName = 'matchnotes_export_${_yyyymmddOf(DateTime.now())}.csv';
     final file = File('${targetDir.path}/$fileName');
-    await file.writeAsString(csv);
-    logCsv.info('export CSV done path=${file.path} bytes=${csv.length}');
+    await file.writeAsString(encoded);
+    logCsv.info('export CSV done path=${file.path} bytes=${encoded.length}');
     return file;
   }
 
