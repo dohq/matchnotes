@@ -17,7 +17,7 @@ dependencies:
   path_provider: ^2.1.5
   intl: ^0.20.2
   collection: ^1.18.0
-  syncfusion_flutter_charts: ^33.0.0
+  syncfusion_flutter_charts: ^34.0.0
   csv: ^8.0.0
   file_picker: ^11.0.0
   wakelock_plus: ^1.2.5
